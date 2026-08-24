@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Menú Restaurante</title>
+</head>
+<body>
+  <h1>Búsqueda de Platillos</h1>
+  <input type="text" id="buscador" placeholder="Buscar platillo..." onkeyup="buscarPlatillos()">
+  
+  <table border="1" id="tabla-platillos">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Precio</th>
+      </tr>
+    </thead>
+    <tbody id="cuerpo-tabla"></tbody>
+  </table>
+
+  <script>
+    async function buscarPlatillos() {
+      const query = document.getElementById('buscador').value;
+      const response = await fetch(`https://restaurante-backend-7wjy.onrender.com/platillos/buscar?nombre=${query}`);
+      const data = await response.json();
+      
+      const tabla = document.getElementById('cuerpo-tabla');
+      tabla.innerHTML = '';
+      
+      data.forEach(platillo => {
+        tabla.innerHTML += `
+          <tr>
+            <td>${platillo.nombre}</td>
+            <td>$${platillo.precio}</td>
+          </tr>
+        `;
+      });
+    }
+  </script>
+</body>
+</html>
