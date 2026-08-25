@@ -17,7 +17,7 @@
         <p class="text-sm text-gray-500">Toma de pedidos, seguimiento de estados y liquidación de pagos</p>
       </div>
       <div class="flex gap-2">
-        <button onclick="cargarOrdenes()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
+        <button onclick="cargarInicial()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
           🔄 Recargar
         </button>
         <button onclick="abrirModalNuevaOrden()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 shadow-sm">
@@ -61,7 +61,7 @@
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="border-b text-xs font-semibold uppercase text-gray-400 bg-gray-50">
-              <th class="p-4"># Orden / Fecha</th>
+              <th class="p-4"># Orden / Tipo</th>
               <th class="p-4">Cliente</th>
               <th class="p-4">Estado</th>
               <th class="p-4">Pago</th>
@@ -88,23 +88,23 @@
         <button onclick="cerrarModalNuevaOrden()" class="text-gray-400 hover:text-gray-600 font-bold text-xl">✕</button>
       </div>
 
-      <div>
-    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Tipo de Pedido</label>
-    <select id="select-tipo-pedido" class="w-full border rounded-lg p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
-        <option value="LOCAL">Comer en el Local</option>
-        <option value="LLEVAR">Para Llevar</option>
-        <option value="DOMICILIO">A Domicilio</option>
-    </select>
-    </div>
-      <!-- Selección de Cliente -->
-      <div>
-        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Cliente</label>
-        <select id="select-cliente" class="w-full border rounded-lg p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="">Cargando clientes...</option>
-        </select>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Cliente</label>
+          <select id="select-cliente" class="w-full border rounded-lg p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Cargando clientes...</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Tipo de Pedido</label>
+          <select id="select-tipo-pedido" class="w-full border rounded-lg p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="LOCAL">Comer en el Local</option>
+            <option value="LLEVAR">Para Llevar</option>
+            <option value="DOMICILIO">A Domicilio</option>
+          </select>
+        </div>
       </div>
 
-      <!-- Agregar Productos a la Orden -->
       <div class="bg-gray-50 p-3 rounded-xl border space-y-3">
         <h4 class="text-xs font-bold text-gray-700 uppercase">Agregar Productos</h4>
         <div class="grid grid-cols-12 gap-2">
@@ -124,7 +124,6 @@
         </div>
       </div>
 
-      <!-- Tabla de Ítems Seleccionados -->
       <div class="border rounded-lg overflow-hidden">
         <table class="w-full text-xs">
           <thead class="bg-gray-100 text-gray-600">
@@ -138,7 +137,7 @@
           </thead>
           <tbody id="tabla-items-nueva-orden" class="divide-y">
             <tr>
-              <td colspan="5" class="p-3 text-center text-gray-400">No hay productos añadidos a la orden</td>
+              <td colspan="5" class="p-3 text-center text-gray-400">No hay productos añadidos</td>
             </tr>
           </tbody>
         </table>
@@ -156,9 +155,10 @@
     </div>
   </div>
 
-  <!-- Modal Ver / Liquidar Orden -->
+  <!-- Modal Ver / Liquidar / Editar Orden -->
   <div id="modal-detalle" class="fixed inset-0 bg-black bg-opacity-40 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full space-y-4 max-h-[90vh] overflow-y-auto">
+      
       <div class="flex justify-between items-start border-b pb-3">
         <div>
           <h3 class="text-lg font-bold text-gray-800" id="modal-titulo-orden">Detalle de Orden #---</h3>
@@ -167,12 +167,39 @@
         <button onclick="cerrarModalDetalle()" class="text-gray-400 hover:text-gray-600 font-bold text-xl">✕</button>
       </div>
 
-      <div class="bg-gray-50 p-3 rounded-lg text-xs space-y-1 text-gray-600">
-        <p><strong class="text-gray-800">Cliente:</strong> <span id="modal-cliente-nombre">-</span></p>
-        <p><strong class="text-gray-800">Teléfono:</strong> <span id="modal-cliente-telefono">-</span></p>
-        <p><strong class="text-gray-800">Dirección:</strong> <span id="modal-cliente-direccion">-</span></p>
+      <!-- Datos del Cliente y Tipo -->
+      <div class="bg-gray-50 p-3 rounded-lg text-xs grid grid-cols-2 gap-2 text-gray-600">
+        <div>
+          <p><strong class="text-gray-800">Cliente:</strong> <span id="modal-cliente-nombre">-</span></p>
+          <p><strong class="text-gray-800">Teléfono:</strong> <span id="modal-cliente-telefono">-</span></p>
+        </div>
+        <div>
+          <p><strong class="text-gray-800">Tipo:</strong> <span id="modal-tipo-pedido" class="font-bold text-blue-800">-</span></p>
+          <p><strong class="text-gray-800">Dirección:</strong> <span id="modal-cliente-direccion">-</span></p>
+        </div>
       </div>
 
+      <!-- Añadir Producto a Orden Existente (si no está cancelada) -->
+      <div id="contenedor-agregar-extra" class="bg-amber-50 p-3 rounded-xl border border-amber-200 space-y-2">
+        <h4 class="text-xs font-bold text-amber-900 uppercase">➕ Agregar Producto Adicional a esta Orden</h4>
+        <div class="grid grid-cols-12 gap-2">
+          <div class="col-span-6">
+            <select id="select-producto-extra" class="w-full border rounded-lg p-2 text-xs bg-white outline-none">
+              <option value="">Cargando productos...</option>
+            </select>
+          </div>
+          <div class="col-span-3">
+            <input type="number" id="cantidad-producto-extra" value="1" min="1" class="w-full border rounded-lg p-2 text-xs bg-white outline-none" placeholder="Cant.">
+          </div>
+          <div class="col-span-3">
+            <button onclick="agregarProductoAOrdenExistente()" class="w-full bg-amber-600 hover:bg-amber-700 text-white rounded-lg p-2 text-xs font-semibold transition">
+              Agregar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ítems Comprados -->
       <div>
         <h4 class="text-xs font-semibold uppercase text-gray-500 mb-2">Productos en la Orden</h4>
         <div class="border rounded-lg overflow-hidden">
@@ -185,13 +212,16 @@
                 <th class="p-2 text-right">Subtotal</th>
               </tr>
             </thead>
-            <tbody id="modal-tabla-items" class="divide-y"></tbody>
+            <tbody id="modal-tabla-items" class="divide-y">
+            </tbody>
           </table>
         </div>
       </div>
 
+      <!-- Sección de Liquidación / Pago -->
       <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 space-y-3">
         <h4 class="text-sm font-bold text-blue-900">💳 Liquidación de Pago</h4>
+        
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Método de Pago</label>
@@ -201,6 +231,7 @@
               <option value="TRANSFERENCIA">Transferencia / QR</option>
             </select>
           </div>
+
           <div>
             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Estado de Pago</label>
             <select id="select-estado-pago" class="w-full border rounded-lg p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
@@ -208,6 +239,7 @@
               <option value="PAGADO">Pagado</option>
             </select>
           </div>
+
           <div>
             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Monto Recibido</label>
             <input type="number" step="0.01" id="monto-recibido" oninput="calcularCambio()" placeholder="0.00" class="w-full border rounded-lg p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
@@ -220,10 +252,12 @@
         </div>
       </div>
 
+      <!-- Botones de Acción -->
       <div class="flex flex-wrap justify-between items-center gap-2 pt-3 border-t">
         <button onclick="eliminarOrdenActual()" class="px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-xs font-semibold transition">
           🗑️ Eliminar Orden
         </button>
+
         <div class="flex gap-2">
           <button onclick="cerrarModalDetalle()" class="px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-100 text-xs font-medium">Cerrar</button>
           <button onclick="guardarLiquidacion()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-semibold shadow-sm transition">
@@ -231,6 +265,7 @@
           </button>
         </div>
       </div>
+
     </div>
   </div>
 
@@ -276,9 +311,15 @@
       try {
         const res = await fetch(`${API_URL}/platillos`);
         listaProductos = await res.json();
-        const select = document.getElementById('select-producto');
-        select.innerHTML = '<option value="">-- Seleccionar Producto --</option>';
-        listaProductos.forEach(p => select.innerHTML += `<option value="${p.id}">${p.nombre} - Q${p.precio.toFixed(2)}</option>`);
+        
+        // Cargar en ambos selects (Nueva Orden y Agregar Extra)
+        ['select-producto', 'select-producto-extra'].forEach(id => {
+          const select = document.getElementById(id);
+          if (select) {
+            select.innerHTML = '<option value="">-- Seleccionar Producto --</option>';
+            listaProductos.forEach(p => select.innerHTML += `<option value="${p.id}" data-precio="${p.precio}">${p.nombre} - Q${p.precio.toFixed(2)}</option>`);
+          }
+        });
       } catch (err) {
         console.error("Error al cargar productos:", err);
       }
@@ -295,7 +336,8 @@
     }
 
     function agregarItemAOrden() {
-      const prodId = parseInt(document.getElementById('select-producto').value);
+      const selectProd = document.getElementById('select-producto');
+      const prodId = parseInt(selectProd.value);
       const cantidad = parseInt(document.getElementById('cantidad-producto').value);
 
       if (!prodId || cantidad <= 0) {
@@ -333,7 +375,7 @@
       let total = 0;
 
       if (itemsNuevaOrden.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-gray-400">No hay productos añadidos a la orden</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-gray-400">No hay productos añadidos</td></tr>`;
       } else {
         itemsNuevaOrden.forEach((item, index) => {
           const subtotal = item.cantidad * item.precio_unitario;
@@ -354,50 +396,48 @@
 
       document.getElementById('total-nueva-orden').innerText = `Q${total.toFixed(2)}`;
     }
+
     async function guardarNuevaOrden() {
-        const clienteId = document.getElementById('select-cliente').value;
-        const tipoPedido = document.getElementById('select-tipo-pedido')?.value || "LOCAL";
+      const clienteId = document.getElementById('select-cliente').value;
+      const tipoPedido = document.getElementById('select-tipo-pedido')?.value || "LOCAL";
 
-        if (!clienteId) {
-            alert("Selecciona un cliente");
-            return;
+      if (!clienteId) {
+        alert("Selecciona un cliente");
+        return;
+      }
+
+      if (itemsNuevaOrden.length === 0) {
+        alert("Agrega al menos un producto a la orden");
+        return;
+      }
+
+      const payload = {
+        cliente_id: parseInt(clienteId),
+        tipo_pedido: tipoPedido,
+        detalles: itemsNuevaOrden.map(i => ({
+          platillo_id: i.producto_id,
+          cantidad: i.cantidad,
+          precio_unitario: parseFloat(i.precio_unitario)
+        }))
+      };
+
+      try {
+        const res = await fetch(`${API_URL}/ordenes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          cerrarModalNuevaOrden();
+          cargarOrdenes();
+        } else {
+          alert("Error al registrar la orden.");
         }
-
-        if (itemsNuevaOrden.length === 0) {
-            alert("Agrega al menos un producto a la orden");
-            return;
-        }
-
-        // Payload estructurado con los requerimientos exactos de Pydantic
-        const payload = {
-            cliente_id: parseInt(clienteId),
-            tipo_pedido: tipoPedido,
-            detalles: itemsNuevaOrden.map(i => ({
-            platillo_id: i.producto_id,
-            cantidad: i.cantidad,
-            precio_unitario: parseFloat(i.precio_unitario)
-            }))
-        };
-
-        try {
-            const res = await fetch(`${API_URL}/ordenes`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-            cerrarModalNuevaOrden();
-            cargarOrdenes();
-            } else {
-            const errorDetail = await res.json();
-            console.error("Error al crear la orden:", errorDetail);
-            alert("Error al registrar la orden. Revisa la consola para más detalle.");
-            }
-        } catch (err) {
-            console.error("Error en la petición POST /ordenes:", err);
-        }
-        }
+      } catch (err) {
+        console.error("Error en POST /ordenes:", err);
+      }
+    }
 
     function actualizarContadores() {
       document.getElementById('cant-todas').innerText = listaOrdenes.length;
@@ -437,16 +477,17 @@
           'CANCELADA': 'bg-red-100 text-red-800 border-red-300'
         }[o.estado] || 'bg-gray-100 text-gray-800';
 
-        const clasePago = o.estado_pago === 'PAGADO' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700';
+        const clienteNombre = o.cliente ? o.cliente.nombre : (listaClientes.find(c => c.id === o.cliente_id)?.nombre || 'Cliente General');
+        const clasePago = o.estado_pago === 'PAGADO' ? 'bg-green-50 text-green-700 font-bold' : 'bg-amber-50 text-amber-700';
 
         tbody.innerHTML += `
           <tr class="hover:bg-gray-50 transition">
             <td class="p-4 font-semibold text-gray-800">
               #${o.id}
-              <div class="text-xs text-gray-400 font-normal">${new Date(o.fecha || Date.now()).toLocaleDateString()}</div>
+              <div class="text-xs text-blue-600 font-medium">${o.tipo_pedido || 'LOCAL'}</div>
             </td>
             <td class="p-4 font-medium text-gray-700">
-              ${o.cliente ? o.cliente.nombre : 'Cliente Ocasional'}
+              ${clienteNombre}
             </td>
             <td class="p-4">
               <select onchange="cambiarEstadoRapido(${o.id}, this.value)" class="text-xs px-2 py-1 rounded-full font-semibold border ${claseEstado} outline-none cursor-pointer">
@@ -457,7 +498,7 @@
               </select>
             </td>
             <td class="p-4">
-              <span class="text-xs px-2 py-1 rounded font-medium ${clasePago}">
+              <span class="text-xs px-2 py-1 rounded ${clasePago}">
                 ${o.estado_pago || 'PENDIENTE'} (${o.metodo_pago || 'EFECTIVO'})
               </span>
             </td>
@@ -479,7 +520,7 @@
         await fetch(`${API_URL}/ordenes/${id}/estado?estado=${nuevoEstado}`, { method: 'PUT' });
         cargarOrdenes();
       } catch (err) {
-        alert("Error al actualizar el estado de la orden");
+        alert("Error al actualizar estado");
       }
     }
 
@@ -489,30 +530,23 @@
 
       document.getElementById('modal-titulo-orden').innerText = `Detalle de Orden #${ordenSeleccionada.id}`;
       document.getElementById('modal-fecha-orden').innerText = `Fecha: ${new Date(ordenSeleccionada.fecha || Date.now()).toLocaleString()}`;
+      document.getElementById('modal-tipo-pedido').innerText = ordenSeleccionada.tipo_pedido || 'LOCAL';
       
-      const c = ordenSeleccionada.cliente || {};
+      // Mapeo seguro de Cliente
+      const c = ordenSeleccionada.cliente || listaClientes.find(cli => cli.id === ordenSeleccionada.cliente_id) || {};
       document.getElementById('modal-cliente-nombre').innerText = c.nombre || 'Cliente General';
       document.getElementById('modal-cliente-telefono').innerText = c.telefono || 'N/A';
       document.getElementById('modal-cliente-direccion').innerText = c.direccion || 'N/A';
 
-      const tbodyItems = document.getElementById('modal-tabla-items');
-      tbodyItems.innerHTML = '';
-      const items = ordenSeleccionada.detalles || ordenSeleccionada.items || [];
-
-      if (items.length === 0) {
-        tbodyItems.innerHTML = `<tr><td colspan="4" class="p-2 text-center text-gray-400">Sin detalles registrados</td></tr>`;
+      // Visibilidad de agregar producto extra (si la orden NO está cancelada)
+      const contenedorExtra = document.getElementById('contenedor-agregar-extra');
+      if (ordenSeleccionada.estado === 'CANCELADA') {
+        contenedorExtra.classList.add('hidden');
       } else {
-        items.forEach(i => {
-          tbodyItems.innerHTML += `
-            <tr>
-              <td class="p-2 font-medium">${i.producto ? i.producto.nombre : (i.nombre_producto || 'Producto')}</td>
-              <td class="p-2 text-center">${i.cantidad}</td>
-              <td class="p-2 text-right">Q${(i.precio_unitario || 0).toFixed(2)}</td>
-              <td class="p-2 text-right font-semibold">Q${(i.subtotal || (i.cantidad * i.precio_unitario) || 0).toFixed(2)}</td>
-            </tr>
-          `;
-        });
+        contenedorExtra.classList.remove('hidden');
       }
+
+      renderizarItemsModalDetalle();
 
       document.getElementById('modal-monto-total').innerText = `Q${(ordenSeleccionada.total || 0).toFixed(2)}`;
       document.getElementById('select-metodo-pago').value = ordenSeleccionada.metodo_pago || 'EFECTIVO';
@@ -521,6 +555,69 @@
       calcularCambio();
 
       document.getElementById('modal-detalle').classList.remove('hidden');
+    }
+
+    function renderizarItemsModalDetalle() {
+      if (!ordenSeleccionada) return;
+
+      const tbodyItems = document.getElementById('modal-tabla-items');
+      tbodyItems.innerHTML = '';
+      
+      // Adaptador para soportar i.platillo, i.producto o los nombres del backend
+      const items = ordenSeleccionada.detalles || ordenSeleccionada.items || [];
+      let totalCalculado = 0;
+
+      if (items.length === 0) {
+        tbodyItems.innerHTML = `<tr><td colspan="4" class="p-2 text-center text-gray-400">Sin detalles registrados</td></tr>`;
+      } else {
+        items.forEach(i => {
+          const nombreProd = i.platillo ? i.platillo.nombre : (i.producto ? i.producto.nombre : (i.nombre_producto || `Platillo #${i.platillo_id || i.producto_id}`));
+          const precio = i.precio_unitario || (i.platillo ? i.platillo.precio : 0);
+          const subtotal = i.subtotal || (i.cantidad * precio);
+          totalCalculado += subtotal;
+
+          tbodyItems.innerHTML += `
+            <tr>
+              <td class="p-2 font-medium">${nombreProd}</td>
+              <td class="p-2 text-center">${i.cantidad}</td>
+              <td class="p-2 text-right">Q${precio.toFixed(2)}</td>
+              <td class="p-2 text-right font-semibold">Q${subtotal.toFixed(2)}</td>
+            </tr>
+          `;
+        });
+      }
+
+      // Actualizar total de la orden
+      ordenSeleccionada.total = totalCalculado > 0 ? totalCalculado : (ordenSeleccionada.total || 0);
+      document.getElementById('modal-monto-total').innerText = `Q${ordenSeleccionada.total.toFixed(2)}`;
+    }
+
+    async function agregarProductoAOrdenExistente() {
+      if (!ordenSeleccionada) return;
+
+      const prodId = parseInt(document.getElementById('select-producto-extra').value);
+      const cantidad = parseInt(document.getElementById('cantidad-producto-extra').value);
+
+      if (!prodId || cantidad <= 0) {
+        alert("Selecciona un producto y cantidad válida");
+        return;
+      }
+
+      const prodObj = listaProductos.find(p => p.id === prodId);
+      if (!prodObj) return;
+
+      const nuevoDetalle = {
+        platillo_id: prodId,
+        cantidad: cantidad,
+        precio_unitario: prodObj.precio,
+        platillo: { nombre: prodObj.nombre, precio: prodObj.precio }
+      };
+
+      if (!ordenSeleccionada.detalles) ordenSeleccionada.detalles = [];
+      ordenSeleccionada.detalles.push(nuevoDetalle);
+
+      renderizarItemsModalDetalle();
+      calcularCambio();
     }
 
     function cerrarModalDetalle() {
@@ -542,15 +639,29 @@
       const datosLiquidacion = {
         metodo_pago: document.getElementById('select-metodo-pago').value,
         estado_pago: document.getElementById('select-estado-pago').value,
-        monto_recibido: parseFloat(document.getElementById('monto-recibido').value) || 0
+        monto_recibido: parseFloat(document.getElementById('monto-recibido').value) || 0,
+        detalles: (ordenSeleccionada.detalles || []).map(i => ({
+          platillo_id: i.platillo_id || i.producto_id,
+          cantidad: i.cantidad,
+          precio_unitario: i.precio_unitario
+        }))
       };
 
       try {
-        await fetch(`${API_URL}/ordenes/${ordenSeleccionada.id}/liquidar`, {
+        const res = await fetch(`${API_URL}/ordenes/${ordenSeleccionada.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(datosLiquidacion)
         });
+
+        if (!res.ok) {
+          // Si el endpoint /ordenes/{id} no soporta PUT completo, intentamos con /liquidar
+          await fetch(`${API_URL}/ordenes/${ordenSeleccionada.id}/liquidar`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datosLiquidacion)
+          });
+        }
 
         cerrarModalDetalle();
         cargarOrdenes();
@@ -561,7 +672,7 @@
 
     async function eliminarOrdenActual() {
       if (!ordenSeleccionada) return;
-      if (!confirm(`¿Estás seguro de eliminar permanentemente la Orden #${ordenSeleccionada.id}?`)) return;
+      if (!confirm(`¿Estás seguro de eliminar la Orden #${ordenSeleccionada.id}?`)) return;
 
       try {
         await fetch(`${API_URL}/ordenes/${ordenSeleccionada.id}`, { method: 'DELETE' });
