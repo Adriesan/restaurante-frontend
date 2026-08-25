@@ -138,19 +138,26 @@
                 ${p.disponible ? 'Activo' : 'Inactivo'}
               </span>
             </td>
-            <td class="p-4 text-center space-x-1">
-              <button onclick="abrirModal(${p.id})" class="px-2.5 py-1 rounded text-xs font-medium border border-blue-300 text-blue-600 hover:bg-blue-50">
-                ✏️ Editar
-              </button>
-              <button onclick="toggleEstado(${p.id}, '${p.nombre}', '${p.descripcion || ''}', ${p.precio}, ${!p.disponible})" 
-                      class="px-2.5 py-1 rounded text-xs font-medium border transition ${p.disponible ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-green-300 text-green-600 hover:bg-green-50'}">
-                ${p.disponible ? 'Inactivar' : 'Activar'}
-              </button>
+            <td class="p-4 text-center">
+              <div class="flex flex-col md:flex-row justify-center items-center gap-1.5">
+                <button onclick="abrirModal(${p.id})" class="w-full md:w-auto px-2.5 py-1 rounded text-xs font-medium border border-blue-300 text-blue-600 hover:bg-blue-50">
+                  ✏️ Editar
+                </button>
+                <button onclick="toggleEstado(${p.id}, '${p.nombre}', '${p.descripcion || ''}', ${p.precio}, ${!p.disponible})" 
+                        class="w-full md:w-auto px-2.5 py-1 rounded text-xs font-medium border transition ${p.disponible ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-green-300 text-green-600 hover:bg-green-50'}">
+                  ${p.disponible ? 'Inactivar' : 'Activar'}
+                </button>
+                <button onclick="eliminarPlatillo(${p.id}, '${p.nombre}')" class="w-full md:w-auto px-2.5 py-1 rounded text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-red-700 hover:border-red-400 transition">
+                  🗑️ Eliminar
+                </button>
+              </div>
             </td>
           </tr>
         `;
       });
     }
+
+    // --- (Funciones existentes: guardarPlatillo, abrirModal, cerrarModal, guardarEdicion, toggleEstado, buscarPlatillos) ---
 
     async function guardarPlatillo(e) {
       e.preventDefault();
@@ -182,7 +189,6 @@
       }
     }
 
-    // Funciones para el Modal de Edición
     function abrirModal(id) {
       const p = listaPlatillos.find(item => item.id === id);
       if (!p) return;
@@ -255,6 +261,37 @@
       }
     }
 
+    // --- Nueva Función para Eliminar un Platillo ---
+    async function eliminarPlatillo(id, nombre) {
+      // 1. Mostrar una ventana de confirmación
+      if (!confirm(`¿Estás seguro de que quieres eliminar definitivamente el platillo "${nombre}"? Esta acción no se puede deshacer.`)) {
+        return; // El usuario canceló la acción
+      }
+
+      try {
+        // 2. Enviar la petición DELETE al backend
+        const res = await fetch(`${API_URL}/platillos/${id}`, {
+          method: 'DELETE'
+        });
+
+        // 3. Verificar si la eliminación fue exitosa (código 204)
+        if (res.status === 204) {
+          // 4. Recargar la tabla para mostrar los cambios
+          cargarProductos();
+          alert(`El platillo "${nombre}" ha sido eliminado exitosamente.`);
+        } else if (res.status === 404) {
+          alert("El platillo no pudo ser encontrado. Puede que ya haya sido eliminado.");
+          cargarProductos(); // Recargar la tabla para estar sincronizados
+        } else {
+          alert("Ocurrió un error inesperado al intentar eliminar el platillo.");
+        }
+      } catch (err) {
+        console.error("Error al eliminar platillo:", err);
+        alert("Ocurrió un error de red al intentar eliminar el platillo.");
+      }
+    }
+
+    // Cargar la lista al abrir la página
     cargarProductos();
   </script>
 </body>
