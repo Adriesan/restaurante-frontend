@@ -8,7 +8,7 @@ function cargarNavbar(paginaActiva) {
           <span class="font-bold text-lg tracking-wide">Sistema Restaurante</span>
         </div>
         <div class="flex gap-2">
-          <a href="index.html" class="px-3 py-2 rounded-lg text-sm font-medium transition ${paginaActiva === 'productos' ? 'bg-blue-600 text-white' : 'hover:bg-slate-700 text-slate-300'}">
+          <a href="productos.html" class="px-3 py-2 rounded-lg text-sm font-medium transition ${paginaActiva === 'productos' ? 'bg-blue-600 text-white' : 'hover:bg-slate-700 text-slate-300'}">
             📦 Productos
           </a>
           <a href="clientes.html" class="px-3 py-2 rounded-lg text-sm font-medium transition ${paginaActiva === 'clientes' ? 'bg-blue-600 text-white' : 'hover:bg-slate-700 text-slate-300'}">
