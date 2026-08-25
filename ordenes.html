@@ -9,57 +9,157 @@
 <body class="bg-gray-100 min-h-screen">
 
   <div class="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <!-- Encabezado -->
+    <div class="bg-white p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-800">Módulo de Órdenes</h1>
+        <p class="text-sm text-gray-500">Gestión de comensales, seguimiento de estados y liquidación de pagos</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="cargarOrdenes()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
+          🔄 Recargar
+        </button>
+      </div>
+    </div>
+
+    <!-- Filtros de Estado -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <button onclick="filtrarPorEstado('TODAS')" class="bg-white p-3 rounded-xl shadow-sm text-center border-b-4 border-gray-400 hover:bg-gray-50 transition">
+        <span class="block text-xs font-semibold text-gray-400 uppercase">Todas</span>
+        <span id="cant-todas" class="text-lg font-bold text-gray-700">0</span>
+      </button>
+      <button onclick="filtrarPorEstado('PENDIENTE')" class="bg-white p-3 rounded-xl shadow-sm text-center border-b-4 border-yellow-400 hover:bg-gray-50 transition">
+        <span class="block text-xs font-semibold text-yellow-600 uppercase">Pendientes</span>
+        <span id="cant-pendientes" class="text-lg font-bold text-gray-700">0</span>
+      </button>
+      <button onclick="filtrarPorEstado('EN_PROCESO')" class="bg-white p-3 rounded-xl shadow-sm text-center border-b-4 border-blue-400 hover:bg-gray-50 transition">
+        <span class="block text-xs font-semibold text-blue-600 uppercase">En Proceso</span>
+        <span id="cant-proceso" class="text-lg font-bold text-gray-700">0</span>
+      </button>
+      <button onclick="filtrarPorEstado('ENTREGADA')" class="bg-white p-3 rounded-xl shadow-sm text-center border-b-4 border-green-400 hover:bg-gray-50 transition">
+        <span class="block text-xs font-semibold text-green-600 uppercase">Entregadas</span>
+        <span id="cant-entregadas" class="text-lg font-bold text-gray-700">0</span>
+      </button>
+      <button onclick="filtrarPorEstado('CANCELADA')" class="bg-white p-3 rounded-xl shadow-sm text-center border-b-4 border-red-400 hover:bg-gray-50 transition col-span-2 md:col-span-1">
+        <span class="block text-xs font-semibold text-red-600 uppercase">Canceladas</span>
+        <span id="cant-canceladas" class="text-lg font-bold text-gray-700">0</span>
+      </button>
+    </div>
+
+    <!-- Tabla de Órdenes -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div class="p-4 border-b bg-gray-50 flex flex-col md:flex-row justify-between items-center gap-3">
+        <h2 class="font-semibold text-gray-700">Historial y Control de Órdenes</h2>
+        <input type="text" id="buscador-ordenes" onkeyup="buscarOrdenes()" placeholder="Buscar por cliente o # orden..." class="border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64">
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b text-xs font-semibold uppercase text-gray-400 bg-gray-50">
+              <th class="p-4"># Orden / Fecha</th>
+              <th class="p-4">Cliente</th>
+              <th class="p-4">Estado</th>
+              <th class="p-4">Pago</th>
+              <th class="p-4 text-right">Total</th>
+              <th class="p-4 text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-ordenes" class="divide-y text-sm text-gray-700">
+            <tr>
+              <td colspan="6" class="p-4 text-center text-gray-400">Cargando órdenes...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Modal Ver / Liquidar Orden -->
+  <div id="modal-detalle" class="fixed inset-0 bg-black bg-opacity-40 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full space-y-4 max-h-[90vh] overflow-y-auto">
       
-      <!-- Panel Izquierdo: Selección de Cliente, Tipo y Menú -->
-      <div class="md:col-span-2 space-y-6">
-        <div class="bg-white p-6 rounded-xl shadow-sm space-y-4">
-          <h2 class="text-lg font-bold text-gray-800">1. Datos del Pedido</h2>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Cliente</label>
-              <select id="select-cliente" class="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">-- Cliente Mostrador / Público --</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Tipo de Pedido *</label>
-              <select id="tipo-pedido" class="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="Local">🍽️ Comer Aquí</option>
-                <option value="Llevar">🛍️ Para Llevar</option>
-                <option value="Domicilio">🛵 A Domicilio</option>
-              </select>
-            </div>
-          </div>
+      <div class="flex justify-between items-start border-b pb-3">
+        <div>
+          <h3 class="text-lg font-bold text-gray-800" id="modal-titulo-orden">Detalle de Orden #---</h3>
+          <p class="text-xs text-gray-400" id="modal-fecha-orden">--/--/----</p>
         </div>
+        <button onclick="cerrarModalDetalle()" class="text-gray-400 hover:text-gray-600 font-bold text-xl">✕</button>
+      </div>
 
-        <!-- Menú de Platillos -->
-        <div class="bg-white p-6 rounded-xl shadow-sm space-y-4">
-          <h2 class="text-lg font-bold text-gray-800">2. Menú / Agregar Platillos</h2>
-          <div id="grid-platillos" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <p class="text-gray-400">Cargando menú...</p>
-          </div>
+      <!-- Datos del Cliente -->
+      <div class="bg-gray-50 p-3 rounded-lg text-xs space-y-1 text-gray-600">
+        <p><strong class="text-gray-800">Cliente:</strong> <span id="modal-cliente-nombre">-</span></p>
+        <p><strong class="text-gray-800">Teléfono:</strong> <span id="modal-cliente-telefono">-</span></p>
+        <p><strong class="text-gray-800">Dirección:</strong> <span id="modal-cliente-direccion">-</span></p>
+      </div>
+
+      <!-- Ítems Comprados -->
+      <div>
+        <h4 class="text-xs font-semibold uppercase text-gray-500 mb-2">Productos en la Orden</h4>
+        <div class="border rounded-lg overflow-hidden">
+          <table class="w-full text-xs">
+            <thead class="bg-gray-100 text-gray-600">
+              <tr>
+                <th class="p-2 text-left">Producto</th>
+                <th class="p-2 text-center">Cant.</th>
+                <th class="p-2 text-right">Precio</th>
+                <th class="p-2 text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="modal-tabla-items" class="divide-y">
+              <!-- Render dinámico de ítems -->
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <!-- Panel Derecho: Carrito / Comanda -->
-      <div class="bg-white p-6 rounded-xl shadow-sm h-fit space-y-4">
-        <h2 class="text-lg font-bold text-gray-800 border-b pb-2">📋 Detalle de la Orden</h2>
+      <!-- Sección de Liquidación / Pago -->
+      <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 space-y-3">
+        <h4 class="text-sm font-bold text-blue-900">💳 Liquidación de Pago</h4>
         
-        <div id="carrito-items" class="space-y-3 min-h-[150px]">
-          <p class="text-xs text-gray-400 text-center py-4">No hay productos agregados</p>
-        </div>
-
-        <div class="border-t pt-4 space-y-2">
-          <div class="flex justify-between font-bold text-lg text-gray-800">
-            <span>Total:</span>
-            <span id="total-orden">Q 0.00</span>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Método de Pago</label>
+            <select id="select-metodo-pago" class="w-full border rounded-lg p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="EFECTIVO">Efectivo</option>
+              <option value="TARJETA">Tarjeta de Crédito/Débito</option>
+              <option value="TRANSFERENCIA">Transferencia / QR</option>
+            </select>
           </div>
 
-          <button onclick="guardarOrden()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition shadow-sm">
-            Guardar Orden
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Estado de Pago</label>
+            <select id="select-estado-pago" class="w-full border rounded-lg p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="PAGADO">Pagado</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Monto Recibido</label>
+            <input type="number" step="0.01" id="monto-recibido" oninput="calcularCambio()" placeholder="0.00" class="w-full border rounded-lg p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center pt-2 border-t border-blue-200 text-sm">
+          <span class="font-semibold text-gray-700">Monto Total: <strong id="modal-monto-total" class="text-blue-900 text-base">Q0.00</strong></span>
+          <span class="font-semibold text-gray-700">Cambio: <strong id="modal-cambio" class="text-green-700 text-base">Q0.00</strong></span>
+        </div>
+      </div>
+
+      <!-- Botones de Acción -->
+      <div class="flex flex-wrap justify-between items-center gap-2 pt-3 border-t">
+        <button onclick="eliminarOrdenActual()" class="px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-xs font-semibold transition">
+          🗑️ Eliminar Orden
+        </button>
+
+        <div class="flex gap-2">
+          <button onclick="cerrarModalDetalle()" class="px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-100 text-xs font-medium">Cerrar</button>
+          <button onclick="guardarLiquidacion()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-semibold shadow-sm transition">
+            💾 Guardar / Liquidar
           </button>
         </div>
       </div>
@@ -69,104 +169,216 @@
 
   <script src="navbar.js"></script>
   <script>
-    cargarNavbar('ordenes'); // Cambiar 'ordenes' por 'productos' o 'clientes' según la página
+    cargarNavbar('ordenes');
     const API_URL = "https://restaurante-backend-7wjy.onrender.com";
-    let carrito = [];
+    let listaOrdenes = [];
+    let ordenSeleccionada = null;
+    let estadoFiltroActual = 'TODAS';
 
-    async function iniciar() {
-      // Cargar Clientes
-      const resClientes = await fetch(`${API_URL}/clientes`);
-      const clientes = await resClientes.json();
-      const selectC = document.getElementById('select-cliente');
-      clientes.forEach(c => {
-        selectC.innerHTML += `<option value="${c.id}">${c.nombre} (${c.telefono || 'Sin tel'})</option>`;
-      });
-
-      // Cargar Platillos
-      const resPlatillos = await fetch(`${API_URL}/platillos`);
-      const platillos = await resPlatillos.json();
-      const grid = document.getElementById('grid-platillos');
-      grid.innerHTML = '';
-      platillos.forEach(p => {
-        if(p.disponible) {
-          grid.innerHTML += `
-            <div class="border p-3 rounded-lg flex justify-between items-center hover:border-blue-500 transition cursor-pointer" onclick="agregarAlCarrito(${p.id}, '${p.nombre}', ${p.precio})">
-              <div>
-                <div class="font-semibold text-sm text-gray-800">${p.nombre}</div>
-                <div class="text-xs text-blue-600 font-bold">Q ${p.precio.toFixed(2)}</div>
-              </div>
-              <button class="bg-blue-50 text-blue-600 font-bold px-2.5 py-1 rounded-lg text-xs hover:bg-blue-100">+</button>
-            </div>
-          `;
-        }
-      });
-    }
-
-    function agregarAlCarrito(id, nombre, precio) {
-      const existe = carrito.find(item => item.platillo_id === id);
-      if(existe) {
-        existe.cantidad += 1;
-      } else {
-        carrito.push({ platillo_id: id, nombre, precio_unitario: precio, cantidad: 1, notas: "" });
+    async function cargarOrdenes() {
+      try {
+        const res = await fetch(`${API_URL}/ordenes`);
+        listaOrdenes = await res.json();
+        actualizarContadores();
+        aplicarFiltros();
+      } catch (err) {
+        console.error("Error al cargar órdenes:", err);
       }
-      renderizarCarrito();
     }
 
-    function renderizarCarrito() {
-      const contenedor = document.getElementById('carrito-items');
-      contenedor.innerHTML = '';
-      let total = 0;
+    function actualizarContadores() {
+      document.getElementById('cant-todas').innerText = listaOrdenes.length;
+      document.getElementById('cant-pendientes').innerText = listaOrdenes.filter(o => o.estado === 'PENDIENTE').length;
+      document.getElementById('cant-proceso').innerText = listaOrdenes.filter(o => o.estado === 'EN_PROCESO').length;
+      document.getElementById('cant-entregadas').innerText = listaOrdenes.filter(o => o.estado === 'ENTREGADA').length;
+      document.getElementById('cant-canceladas').innerText = listaOrdenes.filter(o => o.estado === 'CANCELADA').length;
+    }
 
-      carrito.forEach((item, index) => {
-        const subtotal = item.cantidad * item.precio_unitario;
-        total += subtotal;
-        contenedor.innerHTML += `
-          <div class="flex justify-between items-center text-sm border-b pb-2">
-            <div>
-              <div class="font-medium text-gray-800">${item.nombre}</div>
-              <div class="text-xs text-gray-400">Q ${item.precio_unitario.toFixed(2)} x ${item.cantidad}</div>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-gray-700">Q ${subtotal.toFixed(2)}</span>
-              <button onclick="eliminarDelCarrito(${index})" class="text-red-500 text-xs hover:text-red-700">🗑️</button>
-            </div>
-          </div>
+    function filtrarPorEstado(estado) {
+      estadoFiltroActual = estado;
+      aplicarFiltros();
+    }
+
+    function aplicarFiltros() {
+      let ordenesFiltradas = listaOrdenes;
+
+      if (estadoFiltroActual !== 'TODAS') {
+        ordenesFiltradas = listaOrdenes.filter(o => o.estado === estadoFiltroActual);
+      }
+
+      renderizarTabla(ordenesFiltradas);
+    }
+
+    function renderizarTabla(ordenes) {
+      const tbody = document.getElementById('tabla-ordenes');
+      tbody.innerHTML = '';
+
+      if (ordenes.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">No hay órdenes registradas</td></tr>`;
+        return;
+      }
+
+      ordenes.forEach(o => {
+        const claseEstado = {
+          'PENDIENTE': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+          'EN_PROCESO': 'bg-blue-100 text-blue-800 border-blue-300',
+          'ENTREGADA': 'bg-green-100 text-green-800 border-green-300',
+          'CANCELADA': 'bg-red-100 text-red-800 border-red-300'
+        }[o.estado] || 'bg-gray-100 text-gray-800';
+
+        const clasePago = o.estado_pago === 'PAGADO' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700';
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-gray-50 transition">
+            <td class="p-4 font-semibold text-gray-800">
+              #${o.id}
+              <div class="text-xs text-gray-400 font-normal">${new Date(o.fecha || Date.now()).toLocaleDateString()}</div>
+            </td>
+            <td class="p-4 font-medium text-gray-700">
+              ${o.cliente ? o.cliente.nombre : 'Cliente Ocasional'}
+            </td>
+            <td class="p-4">
+              <select onchange="cambiarEstadoRapido(${o.id}, this.value)" class="text-xs px-2 py-1 rounded-full font-semibold border ${claseEstado} outline-none cursor-pointer">
+                <option value="PENDIENTE" ${o.estado === 'PENDIENTE' ? 'selected' : ''}>PENDIENTE</option>
+                <option value="EN_PROCESO" ${o.estado === 'EN_PROCESO' ? 'selected' : ''}>EN PROCESO</option>
+                <option value="ENTREGADA" ${o.estado === 'ENTREGADA' ? 'selected' : ''}>ENTREGADA</option>
+                <option value="CANCELADA" ${o.estado === 'CANCELADA' ? 'selected' : ''}>CANCELADA</option>
+              </select>
+            </td>
+            <td class="p-4">
+              <span class="text-xs px-2 py-1 rounded font-medium ${clasePago}">
+                ${o.estado_pago || 'PENDIENTE'} (${o.metodo_pago || 'EFECTIVO'})
+              </span>
+            </td>
+            <td class="p-4 text-right font-bold text-gray-800">
+              Q${(o.total || 0).toFixed(2)}
+            </td>
+            <td class="p-4 text-center">
+              <button onclick="abrirModalDetalle(${o.id})" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition">
+                👁️ Ver / Liquidar
+              </button>
+            </td>
+          </tr>
         `;
       });
-
-      document.getElementById('total-orden').innerText = `Q ${total.toFixed(2)}`;
     }
 
-    function eliminarDelCarrito(index) {
-      carrito.splice(index, 1);
-      renderizarCarrito();
-    }
-
-    async function guardarOrden() {
-      if(carrito.length === 0) return alert("Agrega al menos un producto a la orden");
-
-      const payload = {
-        cliente_id: document.getElementById('select-cliente').value || null,
-        tipo_pedido: document.getElementById('tipo-pedido').value,
-        detalles: carrito
-      };
-
-      const res = await fetch(`${API_URL}/ordenes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if(res.ok) {
-        alert("¡Orden guardada exitosamente!");
-        carrito = [];
-        renderizarCarrito();
-      } else {
-        alert("Error al guardar la orden");
+    async function cambiarEstadoRapido(id, nuevoEstado) {
+      try {
+        await fetch(`${API_URL}/ordenes/${id}/estado?estado=${nuevoEstado}`, { method: 'PUT' });
+        cargarOrdenes();
+      } catch (err) {
+        alert("Error al actualizar el estado de la orden");
       }
     }
 
-    iniciar();
+    function abrirModalDetalle(id) {
+      ordenSeleccionada = listaOrdenes.find(o => o.id === id);
+      if (!ordenSeleccionada) return;
+
+      document.getElementById('modal-titulo-orden').innerText = `Detalle de Orden #${ordenSeleccionada.id}`;
+      document.getElementById('modal-fecha-orden').innerText = `Fecha: ${new Date(ordenSeleccionada.fecha || Date.now()).toLocaleString()}`;
+      
+      const c = ordenSeleccionada.cliente || {};
+      document.getElementById('modal-cliente-nombre').innerText = c.nombre || 'Cliente General';
+      document.getElementById('modal-cliente-telefono').innerText = c.telefono || 'N/A';
+      document.getElementById('modal-cliente-direccion').innerText = c.direccion || 'N/A';
+
+      // Cargar ítems
+      const tbodyItems = document.getElementById('modal-tabla-items');
+      tbodyItems.innerHTML = '';
+      const items = ordenSeleccionada.detalles || ordenSeleccionada.items || [];
+
+      if (items.length === 0) {
+        tbodyItems.innerHTML = `<tr><td colspan="4" class="p-2 text-center text-gray-400">Sin detalles registrados</td></tr>`;
+      } else {
+        items.forEach(i => {
+          tbodyItems.innerHTML += `
+            <tr>
+              <td class="p-2 font-medium">${i.producto ? i.producto.nombre : (i.nombre_producto || 'Producto')}</td>
+              <td class="p-2 text-center">${i.cantidad}</td>
+              <td class="p-2 text-right">Q${(i.precio_unitario || 0).toFixed(2)}</td>
+              <td class="p-2 text-right font-semibold">Q${(i.subtotal || (i.cantidad * i.precio_unitario) || 0).toFixed(2)}</td>
+            </tr>
+          `;
+        });
+      }
+
+      // Cargar valores de pago
+      document.getElementById('modal-monto-total').innerText = `Q${(ordenSeleccionada.total || 0).toFixed(2)}`;
+      document.getElementById('select-metodo-pago').value = ordenSeleccionada.metodo_pago || 'EFECTIVO';
+      document.getElementById('select-estado-pago').value = ordenSeleccionada.estado_pago || 'PENDIENTE';
+      document.getElementById('monto-recibido').value = ordenSeleccionada.monto_recibido || '';
+      calcularCambio();
+
+      document.getElementById('modal-detalle').classList.remove('hidden');
+    }
+
+    function cerrarModalDetalle() {
+      document.getElementById('modal-detalle').classList.add('hidden');
+      ordenSeleccionada = null;
+    }
+
+    function calcularCambio() {
+      if (!ordenSeleccionada) return;
+      const total = ordenSeleccionada.total || 0;
+      const recibido = parseFloat(document.getElementById('monto-recibido').value) || 0;
+      const cambio = recibido - total;
+
+      document.getElementById('modal-cambio').innerText = `Q${cambio > 0 ? cambio.toFixed(2) : '0.00'}`;
+    }
+
+    async function guardarLiquidacion() {
+      if (!ordenSeleccionada) return;
+
+      const datosLiquidacion = {
+        metodo_pago: document.getElementById('select-metodo-pago').value,
+        estado_pago: document.getElementById('select-estado-pago').value,
+        monto_recibido: parseFloat(document.getElementById('monto-recibido').value) || 0
+      };
+
+      try {
+        await fetch(`${API_URL}/ordenes/${ordenSeleccionada.id}/liquidar`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(datosLiquidacion)
+        });
+
+        cerrarModalDetalle();
+        cargarOrdenes();
+      } catch (err) {
+        alert("Error al guardar la liquidación");
+      }
+    }
+
+    async function eliminarOrdenActual() {
+      if (!ordenSeleccionada) return;
+      if (!confirm(`¿Estás seguro de eliminar permanentemente la Orden #${ordenSeleccionada.id}?`)) return;
+
+      try {
+        await fetch(`${API_URL}/ordenes/${ordenSeleccionada.id}`, { method: 'DELETE' });
+        cerrarModalDetalle();
+        cargarOrdenes();
+      } catch (err) {
+        alert("Error al eliminar la orden");
+      }
+    }
+
+    async function buscarOrdenes() {
+      const q = document.getElementById('buscador-ordenes').value.toLowerCase();
+      if (!q.trim()) {
+        aplicarFiltros();
+        return;
+      }
+
+      const filtradas = listaOrdenes.filter(o => 
+        o.id.toString().includes(q) || 
+        (o.cliente && o.cliente.nombre.toLowerCase().includes(q))
+      );
+      renderizarTabla(filtradas);
+    }
+
+    cargarOrdenes();
   </script>
 </body>
 </html>
