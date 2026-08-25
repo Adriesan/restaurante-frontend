@@ -14,7 +14,7 @@
     <div class="bg-white p-6 rounded-xl shadow-sm flex justify-between items-center">
       <div>
         <h1 class="text-2xl font-bold text-gray-800">Módulo de Productos</h1>
-        <p class="text-sm text-gray-500">Administra los platillos y su disponibilidad en la base de datos</p>
+        <p class="text-sm text-gray-500">Administra los platillos y su disponibilidad en Quetzales (Q)</p>
       </div>
       <button onclick="cargarProductos()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition">
         🔄 Recargar
@@ -25,14 +25,13 @@
     <div class="bg-white p-6 rounded-xl shadow-sm">
       <h2 class="text-lg font-semibold text-gray-700 mb-4">Agregar Nuevo Platillo</h2>
       <form id="form-producto" onsubmit="guardarPlatillo(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        
         <div>
           <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nombre</label>
           <input type="text" id="nombre" placeholder="Ej. Tacos al Pastor" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Precio ($)</label>
+          <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Precio (Q)</label>
           <input type="number" step="0.01" id="precio" placeholder="0.00" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
 
@@ -42,7 +41,7 @@
         </div>
 
         <button type="submit" id="btn-guardar" class="md:col-span-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition shadow-sm">
-          Guardar en Base de Datos
+          Guardar Platillo
         </button>
       </form>
     </div>
@@ -62,7 +61,7 @@
               <th class="p-4">Descripción</th>
               <th class="p-4">Precio</th>
               <th class="p-4">Estado</th>
-              <th class="p-4 text-center">Acción</th>
+              <th class="p-4 text-center">Acciones</th>
             </tr>
           </thead>
           <tbody id="tabla-platillos" class="divide-y text-sm text-gray-700">
@@ -76,21 +75,49 @@
 
   </div>
 
+  <!-- Modal para Editar Platillo -->
+  <div id="modal-editar" class="fixed inset-0 bg-black bg-opacity-40 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-lg p-6 max-w-md w-full space-y-4">
+      <h3 class="text-lg font-bold text-gray-800">Editar Platillo</h3>
+      <input type="hidden" id="edit-id">
+      <input type="hidden" id="edit-disponible">
+      
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nombre</label>
+        <input type="text" id="edit-nombre" required class="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Precio (Q)</label>
+        <input type="number" step="0.01" id="edit-precio" required class="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Descripción</label>
+        <input type="text" id="edit-descripcion" class="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div class="flex justify-end space-x-2 pt-2">
+        <button onclick="cerrarModal()" class="px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-100 text-sm">Cancelar</button>
+        <button onclick="guardarEdicion()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const API_URL = "https://restaurante-backend-7wjy.onrender.com";
+    let listaPlatillos = [];
 
-    // 1. Obtener y mostrar todos los platillos
     async function cargarProductos() {
       try {
         const res = await fetch(`${API_URL}/platillos`);
-        const platillos = await res.json();
-        renderizarTabla(platillos);
+        listaPlatillos = await res.json();
+        renderizarTabla(listaPlatillos);
       } catch (err) {
         console.error("Error al cargar platillos:", err);
       }
     }
 
-    // Renderizar filas en la tabla HTML
     function renderizarTabla(platillos) {
       const tbody = document.getElementById('tabla-platillos');
       tbody.innerHTML = '';
@@ -105,15 +132,18 @@
           <tr class="hover:bg-gray-50 transition">
             <td class="p-4 font-semibold text-gray-800">${p.nombre}</td>
             <td class="p-4 text-gray-500">${p.descripcion || '-'}</td>
-            <td class="p-4 font-bold text-gray-700">$${parseFloat(p.precio).toFixed(2)}</td>
+            <td class="p-4 font-bold text-gray-700">Q${parseFloat(p.precio).toFixed(2)}</td>
             <td class="p-4">
               <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${p.disponible ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
                 ${p.disponible ? 'Activo' : 'Inactivo'}
               </span>
             </td>
-            <td class="p-4 text-center">
+            <td class="p-4 text-center space-x-1">
+              <button onclick="abrirModal(${p.id})" class="px-2.5 py-1 rounded text-xs font-medium border border-blue-300 text-blue-600 hover:bg-blue-50">
+                ✏️ Editar
+              </button>
               <button onclick="toggleEstado(${p.id}, '${p.nombre}', '${p.descripcion || ''}', ${p.precio}, ${!p.disponible})" 
-                      class="px-3 py-1 rounded text-xs font-medium border transition ${p.disponible ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-green-300 text-green-600 hover:bg-green-50'}">
+                      class="px-2.5 py-1 rounded text-xs font-medium border transition ${p.disponible ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-green-300 text-green-600 hover:bg-green-50'}">
                 ${p.disponible ? 'Inactivar' : 'Activar'}
               </button>
             </td>
@@ -122,7 +152,6 @@
       });
     }
 
-    // 2. Guardar un nuevo platillo (POST)
     async function guardarPlatillo(e) {
       e.preventDefault();
       const btn = document.getElementById('btn-guardar');
@@ -148,12 +177,51 @@
       } catch (err) {
         alert("Error al guardar el platillo");
       } finally {
-        btn.innerText = "Guardar en Base de Datos";
+        btn.innerText = "Guardar Platillo";
         btn.disabled = false;
       }
     }
 
-    // 3. Cambiar estado Activo/Inactivo (PUT)
+    // Funciones para el Modal de Edición
+    function abrirModal(id) {
+      const p = listaPlatillos.find(item => item.id === id);
+      if (!p) return;
+
+      document.getElementById('edit-id').value = p.id;
+      document.getElementById('edit-nombre').value = p.nombre;
+      document.getElementById('edit-precio').value = p.precio;
+      document.getElementById('edit-descripcion').value = p.descripcion || '';
+      document.getElementById('edit-disponible').value = p.disponible;
+
+      document.getElementById('modal-editar').classList.remove('hidden');
+    }
+
+    function cerrarModal() {
+      document.getElementById('modal-editar').classList.add('hidden');
+    }
+
+    async function guardarEdicion() {
+      const id = document.getElementById('edit-id').value;
+      const datosActualizados = {
+        nombre: document.getElementById('edit-nombre').value,
+        precio: parseFloat(document.getElementById('edit-precio').value),
+        descripcion: document.getElementById('edit-descripcion').value,
+        disponible: document.getElementById('edit-disponible').value === 'true'
+      };
+
+      try {
+        await fetch(`${API_URL}/platillos/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(datosActualizados)
+        });
+        cerrarModal();
+        cargarProductos();
+      } catch (err) {
+        alert("Error al editar el platillo");
+      }
+    }
+
     async function toggleEstado(id, nombre, descripcion, precio, nuevoEstado) {
       try {
         await fetch(`${API_URL}/platillos/${id}`, {
@@ -172,7 +240,6 @@
       }
     }
 
-    // 4. Buscar en vivo por nombre
     async function buscarPlatillos() {
       const query = document.getElementById('buscador').value;
       if (!query.trim()) {
@@ -188,7 +255,6 @@
       }
     }
 
-    // Cargar la lista al abrir la página
     cargarProductos();
   </script>
 </body>
