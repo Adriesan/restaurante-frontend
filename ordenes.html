@@ -563,31 +563,33 @@
       const tbodyItems = document.getElementById('modal-tabla-items');
       tbodyItems.innerHTML = '';
       
-      // Adaptador para soportar i.platillo, i.producto o los nombres del backend
+      // Obtener detalles del backend (compatible con platillo o producto)
       const items = ordenSeleccionada.detalles || ordenSeleccionada.items || [];
       let totalCalculado = 0;
 
       if (items.length === 0) {
-        tbodyItems.innerHTML = `<tr><td colspan="4" class="p-2 text-center text-gray-400">Sin detalles registrados</td></tr>`;
+        tbodyItems.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-gray-400">Sin productos registrados en la orden</td></tr>`;
       } else {
         items.forEach(i => {
+          // Extraer nombre y precio unitario correctamente
           const nombreProd = i.platillo ? i.platillo.nombre : (i.producto ? i.producto.nombre : (i.nombre_producto || `Platillo #${i.platillo_id || i.producto_id}`));
           const precio = i.precio_unitario || (i.platillo ? i.platillo.precio : 0);
           const subtotal = i.subtotal || (i.cantidad * precio);
+          
           totalCalculado += subtotal;
 
           tbodyItems.innerHTML += `
-            <tr>
-              <td class="p-2 font-medium">${nombreProd}</td>
-              <td class="p-2 text-center">${i.cantidad}</td>
-              <td class="p-2 text-right">Q${precio.toFixed(2)}</td>
-              <td class="p-2 text-right font-semibold">Q${subtotal.toFixed(2)}</td>
+            <tr class="border-b">
+              <td class="p-2 font-medium text-gray-800">${nombreProd}</td>
+              <td class="p-2 text-center text-gray-700">${i.cantidad}</td>
+              <td class="p-2 text-right text-gray-600">Q${precio.toFixed(2)}</td>
+              <td class="p-2 text-right font-semibold text-gray-800">Q${subtotal.toFixed(2)}</td>
             </tr>
           `;
         });
       }
 
-      // Actualizar total de la orden
+      // Actualizar total general en el modal
       ordenSeleccionada.total = totalCalculado > 0 ? totalCalculado : (ordenSeleccionada.total || 0);
       document.getElementById('modal-monto-total').innerText = `Q${ordenSeleccionada.total.toFixed(2)}`;
     }
@@ -618,6 +620,50 @@
 
       renderizarItemsModalDetalle();
       calcularCambio();
+    }
+
+    function cerrarModalDetalle() {
+      document.getElementById('modal-detalle').classList.add('hidden');
+      ordenSeleccionada = null;
+    }
+
+    function calcularCambio() {
+      if (!ordenSeleccionada) return;
+      const total = ordenSeleccionada.total || 0;
+      const recibido = parseFloat(document.getElementById('monto-recibido').value) || 0;
+      const cambio = recibido - total;
+      document.getElementById('modal-cambio').innerText = `Q${cambio > 0 ? cambio.toFixed(2) : '0.00'}`;
+    }
+
+    async function guardarLiquidacion() {
+      if (!ordenSeleccionada) return;
+
+      const datosLiquidacion = {
+        metodo_pago: document.getElementById('select-metodo-pago').value,
+        estado_pago: document.getElementById('select-estado-pago').value,
+        monto_recibido: parseFloat(document.getElementById('monto-recibido').value) || 0
+      };
+
+      try {
+        // Petición dirigida a la ruta exacta de tu backend /ordenes/{id}/liquidar
+        const res = await fetch(`${API_URL}/ordenes/${ordenSeleccionada.id}/liquidar`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(datosLiquidacion)
+        });
+
+        if (res.ok) {
+          cerrarModalDetalle();
+          cargarOrdenes();
+        } else {
+          const errDetail = await res.json();
+          console.error("Error backend liquidar:", errDetail);
+          alert("Error al guardar la liquidación de la orden.");
+        }
+      } catch (err) {
+        console.error("Error al conectar con la API:", err);
+        alert("Error de conexión al liquidar la orden.");
+      }
     }
 
     function cerrarModalDetalle() {
