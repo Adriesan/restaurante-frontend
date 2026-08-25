@@ -6,9 +6,9 @@
   <title>Módulo de Clientes - Restaurante</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+<body class="bg-gray-100 min-h-screen">
 
-  <div class="max-w-6xl mx-auto space-y-6">
+  <div class="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
 
     <!-- Encabezado -->
     <div class="bg-white p-6 rounded-xl shadow-sm flex justify-between items-center">
@@ -174,7 +174,9 @@
     </div>
   </div>
 
+  <script src="navbar.js"></script>
   <script>
+    cargarNavbar('clientes');
     const API_URL = "https://restaurante-backend-7wjy.onrender.com";
     let listaClientes = [];
 
@@ -376,10 +378,5 @@
 
     cargarClientes();
   </script>
-  <script src="navbar.js"></script>
-<script>
-  cargarNavbar('clientes'); // Cambiar 'ordenes' por 'productos' o 'clientes' según la página
-</script>
 </body>
-
 </html>
