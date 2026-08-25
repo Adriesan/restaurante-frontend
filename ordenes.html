@@ -348,39 +348,45 @@
     }
 
     async function guardarNuevaOrden() {
-      const clienteId = document.getElementById('select-cliente').value;
-      if (!clienteId) {
-        alert("Selecciona un cliente");
-        return;
-      }
+  const clienteId = document.getElementById('select-cliente').value;
+  if (!clienteId) {
+    alert("Selecciona un cliente");
+    return;
+  }
 
-      if (itemsNuevaOrden.length === 0) {
-        alert("Agrega al menos un producto a la orden");
-        return;
-      }
+  if (itemsNuevaOrden.length === 0) {
+    alert("Agrega al menos un producto a la orden");
+    return;
+  }
 
-      const payload = {
-        cliente_id: parseInt(clienteId),
-        detalles: itemsNuevaOrden.map(i => ({ producto_id: i.producto_id, cantidad: i.cantidad }))
-      };
+  // Estructura adaptada al esquema estándar de FastAPI / Pydantic
+  const payload = {
+    cliente_id: parseInt(clienteId),
+    items: itemsNuevaOrden.map(i => ({ 
+      platillo_id: i.producto_id, 
+      cantidad: i.cantidad 
+    }))
+  };
 
-      try {
-        const res = await fetch(`${API_URL}/ordenes`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+  try {
+    const res = await fetch(`${API_URL}/ordenes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
 
-        if (res.ok) {
-          cerrarModalNuevaOrden();
-          cargarOrdenes();
-        } else {
-          alert("Error al registrar la orden");
-        }
-      } catch (err) {
-        console.error("Error al registrar la orden:", err);
-      }
+    if (res.ok) {
+      cerrarModalNuevaOrden();
+      cargarOrdenes();
+    } else {
+      const errorDetail = await res.json();
+      console.error("Detalle del error FastAPI 422:", errorDetail);
+      alert("Error al registrar la orden: Revisa la consola para más detalle.");
     }
+  } catch (err) {
+    console.error("Error al registrar la orden:", err);
+  }
+}
 
     function actualizarContadores() {
       document.getElementById('cant-todas').innerText = listaOrdenes.length;
