@@ -88,6 +88,14 @@
         <button onclick="cerrarModalNuevaOrden()" class="text-gray-400 hover:text-gray-600 font-bold text-xl">✕</button>
       </div>
 
+      <div>
+    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Tipo de Pedido</label>
+    <select id="select-tipo-pedido" class="w-full border rounded-lg p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="LOCAL">Comer en el Local</option>
+        <option value="LLEVAR">Para Llevar</option>
+        <option value="DOMICILIO">A Domicilio</option>
+    </select>
+    </div>
       <!-- Selección de Cliente -->
       <div>
         <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Cliente</label>
@@ -346,47 +354,50 @@
 
       document.getElementById('total-nueva-orden').innerText = `Q${total.toFixed(2)}`;
     }
+    async function guardarNuevaOrden() {
+        const clienteId = document.getElementById('select-cliente').value;
+        const tipoPedido = document.getElementById('select-tipo-pedido')?.value || "LOCAL";
 
-        async function guardarNuevaOrden() {
-    const clienteId = document.getElementById('select-cliente').value;
-    if (!clienteId) {
-        alert("Selecciona un cliente");
-        return;
-    }
-
-    if (itemsNuevaOrden.length === 0) {
-        alert("Agrega al menos un producto a la orden");
-        return;
-    }
-
-    // Estructura para OrdenCrear (detalles -> platillo_id)
-    const payload = {
-        cliente_id: parseInt(clienteId),
-        detalles: itemsNuevaOrden.map(i => ({
-        platillo_id: i.producto_id,
-        cantidad: i.cantidad
-        }))
-    };
-
-    try {
-        const res = await fetch(`${API_URL}/ordenes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
-        cerrarModalNuevaOrden();
-        cargarOrdenes();
-        } else {
-        const errorDetail = await res.json();
-        console.error("Detalle exacto del error 422:", JSON.stringify(errorDetail, null, 2));
-        alert("Error 422: Revisa el objeto en la consola del navegador para ver el campo exacto.");
+        if (!clienteId) {
+            alert("Selecciona un cliente");
+            return;
         }
-    } catch (err) {
-        console.error("Error al registrar la orden:", err);
-    }
-    }
+
+        if (itemsNuevaOrden.length === 0) {
+            alert("Agrega al menos un producto a la orden");
+            return;
+        }
+
+        // Payload estructurado con los requerimientos exactos de Pydantic
+        const payload = {
+            cliente_id: parseInt(clienteId),
+            tipo_pedido: tipoPedido,
+            detalles: itemsNuevaOrden.map(i => ({
+            platillo_id: i.producto_id,
+            cantidad: i.cantidad,
+            precio_unitario: parseFloat(i.precio_unitario)
+            }))
+        };
+
+        try {
+            const res = await fetch(`${API_URL}/ordenes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+            cerrarModalNuevaOrden();
+            cargarOrdenes();
+            } else {
+            const errorDetail = await res.json();
+            console.error("Error al crear la orden:", errorDetail);
+            alert("Error al registrar la orden. Revisa la consola para más detalle.");
+            }
+        } catch (err) {
+            console.error("Error en la petición POST /ordenes:", err);
+        }
+        }
 
     function actualizarContadores() {
       document.getElementById('cant-todas').innerText = listaOrdenes.length;
