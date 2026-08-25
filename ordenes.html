@@ -524,28 +524,31 @@
       }
     }
 
-    async function abrirModalDetalle(idOrden) {
-    try {
-        // 1. Consultar la orden completa desde la API para traer todos sus detalles
-        const res = await fetch(`${API_URL}/ordenes/${idOrden}`);
-        if (!res.ok) throw new Error("No se pudo obtener la orden");
-        
-        ordenSeleccionada = await res.json();
-        
-        // 2. Llenar campos de cliente / información general
-        document.getElementById('modal-id-orden').innerText = ordenSeleccionada.id;
-        document.getElementById('modal-cliente-nombre').innerText = ordenSeleccionada.cliente || 'Cliente General';
-        
-        // 3. Renderizar productos existentes y calcular total real
-        renderizarItemsModalDetalle();
+    function abrirModalDetalle(idOrden) {
+  // 1. Buscar la orden en el array local de órdenes (sin hacer fetch al backend)
+  // Nota: Asegúrate de que tu array global se llame 'listaOrdenes' o cámbialo por el nombre que uses
+  ordenSeleccionada = listaOrdenes.find(o => o.id === idOrden);
 
-        // 4. Mostrar modal
-        document.getElementById('modal-detalle').classList.remove('hidden');
-    } catch (err) {
-        console.error("Error al abrir detalle:", err);
-        alert("Error al cargar la orden.");
-    }
-    }
+  if (!ordenSeleccionada) {
+    alert("No se encontró la información de la orden seleccionada.");
+    return;
+  }
+
+  // Clenar una copia profunda de detalles si no existen para evitar errores
+  if (!ordenSeleccionada.detalles && !ordenSeleccionada.items) {
+    ordenSeleccionada.detalles = [];
+  }
+
+  // 2. Llenar los datos del modal
+  document.getElementById('modal-id-orden').innerText = ordenSeleccionada.id;
+  document.getElementById('modal-cliente-nombre').innerText = ordenSeleccionada.cliente || 'Cliente General';
+  
+  // 3. Renderizar la tabla de productos y calcular el total actualizado
+  renderizarItemsModalDetalle();
+
+  // 4. Mostrar el modal
+  document.getElementById('modal-detalle').classList.remove('hidden');
+}
 
     function renderizarItemsModalDetalle() {
   if (!ordenSeleccionada) return;
