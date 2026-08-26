@@ -525,30 +525,36 @@
     }
 
     function abrirModalDetalle(idOrden) {
-  // 1. Buscar la orden en el array local de órdenes (sin hacer fetch al backend)
-  // Nota: Asegúrate de que tu array global se llame 'listaOrdenes' o cámbialo por el nombre que uses
-  ordenSeleccionada = listaOrdenes.find(o => o.id === idOrden);
+        // 1. Buscar la orden en tu array local
+        ordenSeleccionada = listaOrdenes.find(o => o.id === idOrden);
 
-  if (!ordenSeleccionada) {
-    alert("No se encontró la información de la orden seleccionada.");
-    return;
-  }
+        if (!ordenSeleccionada) {
+            alert("No se encontró la información de la orden.");
+            return;
+        }
 
-  // Clenar una copia profunda de detalles si no existen para evitar errores
-  if (!ordenSeleccionada.detalles && !ordenSeleccionada.items) {
-    ordenSeleccionada.detalles = [];
-  }
+        // 2. Asignar datos usando verificación para evitar "null"
+        const elemId = document.getElementById('modal-id-orden');
+        if (elemId) elemId.innerText = ordenSeleccionada.id;
 
-  // 2. Llenar los datos del modal
-  document.getElementById('modal-id-orden').innerText = ordenSeleccionada.id;
-  document.getElementById('modal-cliente-nombre').innerText = ordenSeleccionada.cliente || 'Cliente General';
-  
-  // 3. Renderizar la tabla de productos y calcular el total actualizado
-  renderizarItemsModalDetalle();
+        const elemCliente = document.getElementById('modal-cliente-nombre');
+        if (elemCliente) {
+            // Lee el nombre del cliente según el atributo que devuelva tu API (cliente, cliente_nombre, etc.)
+            const nombreCliente = ordenSeleccionada.cliente || ordenSeleccionada.cliente_nombre || 'Cliente General';
+            elemCliente.innerText = nombreCliente;
+        }
 
-  // 4. Mostrar el modal
-  document.getElementById('modal-detalle').classList.remove('hidden');
-}
+        // 3. Renderizar items y recalcular total general
+        renderizarItemsModalDetalle();
+
+        // 4. Mostrar el modal
+        const modal = document.getElementById('modal-detalle');
+        if (modal) {
+            modal.classList.remove('hidden');
+        } else {
+            console.error("El contenedor 'modal-detalle' no existe en el DOM.");
+        }
+        }
 
     function renderizarItemsModalDetalle() {
   if (!ordenSeleccionada) return;
