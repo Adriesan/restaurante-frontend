@@ -525,52 +525,67 @@
     }
 
     function abrirModalDetalle(idOrden) {
-        // 1. Buscar la orden en tu array local
-        ordenSeleccionada = listaOrdenes.find(o => o.id === idOrden);
+  // Convertir a número por si viene como String desde el HTML
+  const idBusqueda = parseInt(idOrden);
 
-        if (!ordenSeleccionada) {
-            alert("No se encontró la información de la orden.");
-            return;
-        }
+  // 1. Intentar buscar en las variables globales más comunes
+  const arrayOrdenes = (typeof listaOrdenes !== 'undefined') ? listaOrdenes : 
+                       (typeof ordenes !== 'undefined') ? ordenes : [];
 
-        // 2. Asignar datos usando verificación para evitar "null"
-        const elemId = document.getElementById('modal-id-orden');
-        if (elemId) elemId.innerText = ordenSeleccionada.id;
+  ordenSeleccionada = arrayOrdenes.find(o => parseInt(o.id) === idBusqueda);
 
-        const elemCliente = document.getElementById('modal-cliente-nombre');
-        if (elemCliente) {
-            // Lee el nombre del cliente según el atributo que devuelva tu API (cliente, cliente_nombre, etc.)
-            const nombreCliente = ordenSeleccionada.cliente || ordenSeleccionada.cliente_nombre || 'Cliente General';
-            elemCliente.innerText = nombreCliente;
-        }
+  console.log("ID buscado:", idBusqueda);
+  console.log("Orden encontrada:", ordenSeleccionada);
 
-        // 3. Renderizar items y recalcular total general
-        renderizarItemsModalDetalle();
+  if (!ordenSeleccionada) {
+    alert(`No se encontró la orden #${idOrden} en la lista local.`);
+    return;
+  }
 
-        // 4. Mostrar el modal
-        const modal = document.getElementById('modal-detalle');
-        if (modal) {
-            modal.classList.remove('hidden');
-        } else {
-            console.error("El contenedor 'modal-detalle' no existe en el DOM.");
-        }
-        }
+  // 2. Llenar los campos de texto del modal
+  const elemId = document.getElementById('modal-id-orden');
+  if (elemId) elemId.innerText = ordenSeleccionada.id;
 
-    function renderizarItemsModalDetalle() {
+  const elemCliente = document.getElementById('modal-cliente-nombre');
+  if (elemCliente) {
+    // Busca el cliente en varias propiedades posibles
+    const cliente = ordenSeleccionada.cliente || 
+                   (ordenSeleccionada.cliente_rel ? ordenSeleccionada.cliente_rel.nombre : null) || 
+                   ordenSeleccionada.nombre_cliente || 
+                   'Cliente General';
+    elemCliente.innerText = cliente;
+  }
+
+  // 3. Renderizar los productos y actualizar el total
+  renderizarItemsModalDetalle();
+
+  // 4. Mostrar modal
+  const modal = document.getElementById('modal-detalle');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function renderizarItemsModalDetalle() {
   if (!ordenSeleccionada) return;
 
   const tbodyItems = document.getElementById('modal-tabla-items');
+  if (!tbodyItems) return;
   tbodyItems.innerHTML = '';
 
-  // Capturar lista de items según venga en tu backend FastAPI (detalles / items / productos)
-  const items = ordenSeleccionada.detalles || ordenSeleccionada.items || ordenSeleccionada.platillos || [];
+  // Capturar el arreglo de ítems/productos sin importar cómo se llame en la respuesta de tu API
+  const items = ordenSeleccionada.detalles || 
+                ordenSeleccionada.items || 
+                ordenSeleccionada.platillos || 
+                ordenSeleccionada.orden_detalles || [];
+
+  console.log("Productos/Detalles de la orden:", items);
+
   let totalCalculado = 0;
 
   if (items.length === 0) {
     tbodyItems.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-gray-400">Sin productos en la orden</td></tr>`;
   } else {
     items.forEach((i) => {
-      // Intenta extraer el nombre desde platillo, producto o propiedad directa
+      // Intentar extraer el nombre del producto de todas las formas posibles de tu backend
       const nombreProd = 
         (i.platillo && i.platillo.nombre) || 
         (i.producto && i.producto.nombre) || 
@@ -579,7 +594,7 @@
         i.nombre || 
         `Producto #${i.platillo_id || i.producto_id || i.id}`;
 
-      // Determina precio unitario y subtotal
+      // Extraer cantidad y precio
       const cant = parseInt(i.cantidad || 1);
       const precio = parseFloat(i.precio_unitario || (i.platillo ? i.platillo.precio : 0) || i.precio || 0);
       const subtotal = i.subtotal ? parseFloat(i.subtotal) : (cant * precio);
@@ -597,48 +612,17 @@
     });
   }
 
-  // Actualizar el valor total general
+  // Si no hay cálculo por ítems, usar el total guardado en la orden
+  if (totalCalculado === 0 && ordenSeleccionada.total) {
+    totalCalculado = parseFloat(ordenSeleccionada.total);
+  }
+
   ordenSeleccionada.total = totalCalculado;
-  const elementoTotal = document.getElementById('modal-monto-total');
-  if (elementoTotal) {
-    elementoTotal.innerText = `Q${totalCalculado.toFixed(2)}`;
-  }
-}
-
-function agregarProductoAOrdenExistente() {
-  if (!ordenSeleccionada) return;
-
-  const selectProd = document.getElementById('select-producto-extra');
-  const prodId = parseInt(selectProd.value);
-  const cantidad = parseInt(document.getElementById('cantidad-producto-extra').value);
-
-  if (!prodId || isNaN(cantidad) || cantidad <= 0) {
-    alert("Selecciona un producto y cantidad válida");
-    return;
-  }
-
-  // Buscar objeto producto desde la lista general precargada
-  const prodObj = listaProductos.find(p => p.id === prodId);
-  const precioUnitario = prodObj ? prodObj.precio : 0;
-  const nombreProd = prodObj ? prodObj.nombre : `Producto #${prodId}`;
-
-  const nuevoItem = {
-    platillo_id: prodId,
-    cantidad: cantidad,
-    precio_unitario: precioUnitario,
-    subtotal: cantidad * precioUnitario,
-    nombre: nombreProd
-  };
-
-  if (!ordenSeleccionada.detalles) {
-    ordenSeleccionada.detalles = [];
-  }
   
-  // Agregar a la lista local para refrescar tabla y total
-  ordenSeleccionada.detalles.push(nuevoItem);
-
-  renderizarItemsModalDetalle();
-  calcularCambio();
+  const elemTotal = document.getElementById('modal-monto-total');
+  if (elemTotal) {
+    elemTotal.innerText = `Q${totalCalculado.toFixed(2)}`;
+  }
 }
 
 async function guardarLiquidacion() {
