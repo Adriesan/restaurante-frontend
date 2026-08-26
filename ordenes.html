@@ -526,40 +526,52 @@
     }
 
 // ==========================================
-// 1. ABRIR Y CARGAR EL MODAL
+// 1. ABRIR Y CARGAR EL MODAL (MODIFICADO)
 // ==========================================
-async function abrirModalDetalle(idOrden) {
+function abrirModalDetalle(idOrden) {
   try {
-    // Si tienes un array local de órdenes, búscala ahí. Si no, haz fetch al backend:
-    const respuesta = await fetch(`/api/ordenes/${idOrden}`);
-    if (!respuesta.ok) throw new Error("Error al obtener detalles de la orden");
-    ordenSeleccionada = await respuesta.json();
+    // Buscar la orden en el arreglo que ya existe en memoria en tu frontend
+    const arrayOrdenes = (typeof listaOrdenes !== 'undefined') ? listaOrdenes : 
+                         (typeof ordenes !== 'undefined') ? ordenes : [];
+
+    ordenSeleccionada = arrayOrdenes.find(o => parseInt(o.id) === parseInt(idOrden));
+
+    if (!ordenSeleccionada) {
+      console.error(`No se encontró la orden con ID: ${idOrden}`);
+      alert("No se encontraron los datos de la orden seleccionada.");
+      return;
+    }
 
     // 1. Rellenar cabecera y datos del cliente
     document.getElementById('modal-titulo-orden').innerText = `Detalle de Orden #${ordenSeleccionada.id}`;
-    document.getElementById('modal-fecha-orden').innerText = ordenSeleccionada.fecha || new Date().toLocaleDateString();
+    document.getElementById('modal-fecha-orden').innerText = ordenSeleccionada.fecha || ordenSeleccionada.creado_en || '--/--/----';
     
-    document.getElementById('modal-cliente-nombre').innerText = ordenSeleccionada.cliente_nombre || '-';
-    document.getElementById('modal-cliente-telefono').innerText = ordenSeleccionada.cliente_telefono || '-';
-    document.getElementById('modal-tipo-pedido').innerText = (ordenSeleccionada.tipo_pedido || '-').toUpperCase();
-    document.getElementById('modal-cliente-direccion').innerText = ordenSeleccionada.direccion_entrega || '-';
+    // Extracción segura de datos de cliente
+    const clienteNombre = ordenSeleccionada.cliente_nombre || (ordenSeleccionada.cliente ? ordenSeleccionada.cliente.nombre : '-');
+    const clienteTel = ordenSeleccionada.cliente_telefono || (ordenSeleccionada.cliente ? ordenSeleccionada.cliente.telefono : '-');
+    const clienteDir = ordenSeleccionada.direccion_entrega || ordenSeleccionada.direccion || (ordenSeleccionada.cliente ? ordenSeleccionada.cliente.direccion : '-');
 
-    // 2. Establecer valores de liquidación si ya existen
+    document.getElementById('modal-cliente-nombre').innerText = clienteNombre;
+    document.getElementById('modal-cliente-telefono').innerText = clienteTel;
+    document.getElementById('modal-tipo-pedido').innerText = (ordenSeleccionada.tipo_pedido || ordenSeleccionada.tipo || '-').toUpperCase();
+    document.getElementById('modal-cliente-direccion').innerText = clienteDir;
+
+    // 2. Establecer valores de liquidación
     document.getElementById('select-metodo-pago').value = ordenSeleccionada.metodo_pago || 'EFECTIVO';
-    document.getElementById('select-estado-pago').value = ordenSeleccionada.estado_pago || 'PENDIENTE';
+    document.getElementById('select-estado-pago').value = ordenSeleccionada.estado_pago || ordenSeleccionada.estado || 'PENDIENTE';
     document.getElementById('monto-recibido').value = ordenSeleccionada.monto_recibido || '';
 
-    // 3. Cargar select de productos extra y renderizar la tabla de items
-    await cargarSelectProductosExtra();
+    // 3. Cargar el select de productos adicionales y renderizar ítems
+    cargarSelectProductosExtra();
     renderizarItemsModalDetalle();
 
-    // 4. Mostrar el modal (quitar la clase hidden)
+    // 4. Mostrar el modal
     const modal = document.getElementById('modal-detalle');
     if (modal) modal.classList.remove('hidden');
 
   } catch (error) {
     console.error("Error al abrir el modal:", error);
-    alert("No se pudieron cargar los datos de la orden.");
+    alert("Ocurrió un error al cargar la información del modal.");
   }
 }
 
