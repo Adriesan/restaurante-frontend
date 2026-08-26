@@ -525,158 +525,224 @@
       }
     }
 
+async function abrirModalDetalle(idOrden) {
+  const idBusqueda = parseInt(idOrden);
 
-// 1. Abrir Modal (Restaurado a tu lógica original de lectura local)
-function abrirModalDetalle(idOrden) {
-  // Busca la orden en la lista que ya cargaste en la pantalla
-  const arrayOrdenes = typeof listaOrdenes !== 'undefined' ? listaOrdenes : (typeof ordenes !== 'undefined' ? ordenes : []);
-  ordenSeleccionada = arrayOrdenes.find(o => o.id == idOrden);
-
-  if (!ordenSeleccionada) return;
-
-  // Cargar datos principales en el DOM
-  document.getElementById('modal-titulo-orden').innerText = `Detalle de Orden #${ordenSeleccionada.id}`;
-  document.getElementById('modal-fecha-orden').innerText = ordenSeleccionada.fecha || '--/--/----';
+  // 1. Intentar obtener la orden base del array local
+  const arrayOrdenes = (typeof listaOrdenes !== 'undefined') ? listaOrdenes : 
+                       (typeof ordenes !== 'undefined') ? ordenes : [];
   
-  document.getElementById('modal-cliente-nombre').innerText = ordenSeleccionada.cliente_nombre || '-';
-  document.getElementById('modal-cliente-telefono').innerText = ordenSeleccionada.cliente_telefono || '-';
-  document.getElementById('modal-tipo-pedido').innerText = (ordenSeleccionada.tipo_pedido || '-').toUpperCase();
-  document.getElementById('modal-cliente-direccion').innerText = ordenSeleccionada.direccion_entrega || '-';
+  ordenSeleccionada = arrayOrdenes.find(o => parseInt(o.id) === idBusqueda);
 
-  // Valores de pago
-  document.getElementById('select-metodo-pago').value = ordenSeleccionada.metodo_pago || 'EFECTIVO';
-  document.getElementById('select-estado-pago').value = ordenSeleccionada.estado_pago || 'PENDIENTE';
-  document.getElementById('monto-recibido').value = ordenSeleccionada.monto_recibido || '';
+  // 2. Obtener la orden actualizada con sus datos de cliente y detalles desde el backend
+  try {
+    const res = await fetch(`${API_URL}/ordenes/${idBusqueda}`);
+    if (res.ok) {
+      const ordenCompleta = await res.json();
+      ordenSeleccionada = ordenCompleta;
+    }
+  } catch (e) {
+    console.warn("No se pudo refrescar la orden desde la API, usando versión local.", e);
+  }
 
-  // Renderizar tabla de ítems y cargar productos al select
-  cargarSelectProductosExtra();
-  renderizarItemsModalDetalle();
-
-  // Mostrar modal
-  document.getElementById('modal-detalle').classList.remove('hidden');
-}
-
-// 2. Cargar opciones en el select de productos adicionales
-function cargarSelectProductosExtra() {
-  const select = document.getElementById('select-producto-extra');
-  if (!select) return;
-
-  const arrayPlatillos = typeof listaPlatillos !== 'undefined' ? listaPlatillos : (typeof platillos !== 'undefined' ? platillos : []);
-
-  select.innerHTML = '<option value="">Selecciona un producto...</option>';
-  arrayPlatillos.forEach(p => {
-    select.innerHTML += `<option value="${p.id}">${p.nombre} - Q${parseFloat(p.precio).toFixed(2)}</option>`;
-  });
-}
-
-// 3. Agregar producto adicional a la orden
-function agregarProductoAOrdenExistente() {
-  if (!ordenSeleccionada) return;
-
-  const select = document.getElementById('select-producto-extra');
-  const inputCantidad = document.getElementById('cantidad-producto-extra');
-
-  if (!select.value) {
-    alert("Selecciona un producto.");
+  if (!ordenSeleccionada) {
+    alert("No se encontró la información de la orden.");
     return;
   }
 
-  const platilloId = parseInt(select.value);
-  const cantidad = parseInt(inputCantidad.value) || 1;
-
-  const arrayPlatillos = typeof listaPlatillos !== 'undefined' ? listaPlatillos : (typeof platillos !== 'undefined' ? platillos : []);
-  const producto = arrayPlatillos.find(p => p.id == platilloId);
-
-  if (!producto) return;
-
-  if (!ordenSeleccionada.detalles) ordenSeleccionada.detalles = [];
-
-  // Verificar si ya existe en la orden para sumar la cantidad
-  const itemExistente = ordenSeleccionada.detalles.find(d => (d.platillo_id || d.platillo?.id) == platilloId);
-
-  if (itemExistente) {
-    itemExistente.cantidad = parseInt(itemExistente.cantidad) + cantidad;
-  } else {
-    ordenSeleccionada.detalles.push({
-      platillo_id: producto.id,
-      cantidad: cantidad,
-      precio_unitario: producto.precio,
-      platillo: { nombre: producto.nombre, precio: producto.precio }
-    });
+  // Asegurar que exista el array de detalles
+  if (!ordenSeleccionada.detalles) {
+    ordenSeleccionada.detalles = [];
   }
 
-  // Limpiar campos y refrescar tabla
-  select.value = '';
-  inputCantidad.value = 1;
-  renderizarItemsModalDetalle();
-}
+  // 3. Llenar el ID de la orden en el título del modal
+  const elemId = document.getElementById('modal-id-orden');
+  if (elemId) elemId.innerText = ordenSeleccionada.id;
 
-// 4. Eliminar producto de la orden
-function eliminarProductoDeOrden(index) {
-  if (!ordenSeleccionada || !ordenSeleccionada.detalles) return;
-  ordenSeleccionada.detalles.splice(index, 1);
-  renderizarItemsModalDetalle();
-}
+  // 4. Llenar los datos del Cliente
+  const cliente = ordenSeleccionada.cliente;
 
-// 5. Renderizar ítems de la tabla y actualizar total
+  const elemNombre = document.getElementById('modal-cliente-nombre');
+  if (elemNombre) {
+    elemNombre.innerText = cliente ? cliente.nombre : 'Consumidor Final / General';
+  }
+
+  const elemTelefono = document.getElementById('modal-cliente-telefono');
+  if (elemTelefono) {
+    const tels = [cliente?.telefono, cliente?.telefono_2].filter(Boolean).join(' / ');
+    elemTelefono.innerText = tels || 'N/A';
+  }
+
+  const elemDireccion = document.getElementById('modal-cliente-direccion');
+  if (elemDireccion) {
+    elemDireccion.innerText = cliente?.direccion || 'No especificada';
+  }
+
+  const elemReferencia = document.getElementById('modal-cliente-referencia');
+  if (elemReferencia) {
+    elemReferencia.innerText = cliente?.referencia || 'N/A';
+  }
+
+  const elemNit = document.getElementById('modal-cliente-nit');
+  if (elemNit) {
+    elemNit.innerText = cliente?.nit || 'C/F';
+  }
+
+  // 5. Llenar tipo de pedido y observaciones
+  const elemTipoPedido = document.getElementById('modal-tipo-pedido');
+  if (elemTipoPedido) {
+    elemTipoPedido.innerText = ordenSeleccionada.tipo_pedido || 'N/A';
+  }
+
+  const elemObservaciones = document.getElementById('modal-observaciones');
+  if (elemObservaciones) {
+    elemObservaciones.innerText = ordenSeleccionada.observaciones || 'Sin observaciones';
+  }
+
+  // 6. Renderizar los platillos/ítems en la tabla del modal
+  renderizarItemsModalDetalle();
+
+  // 7. Mostrar el modal quitando la clase 'hidden'
+  const modal = document.getElementById('modal-detalle');
+  if (modal) {
+    modal.classList.remove('hidden');
+  } else {
+    console.error("El elemento con id 'modal-detalle' no se encontró en el DOM.");
+  }
+}
 function renderizarItemsModalDetalle() {
   if (!ordenSeleccionada) return;
 
-  const tbody = document.getElementById('modal-tabla-items');
-  tbody.innerHTML = '';
+  const tbodyItems = document.getElementById('modal-tabla-items');
+  if (!tbodyItems) return;
+  tbodyItems.innerHTML = '';
 
-  const detalles = ordenSeleccionada.detalles || [];
-  let total = 0;
+  const items = ordenSeleccionada.detalles || [];
+  let sumaItems = 0;
 
-  if (detalles.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-gray-400">Sin productos</td></tr>`;
+  if (items.length === 0) {
+    tbodyItems.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-gray-400">Sin detalles cargados en esta orden</td></tr>`;
   } else {
-    detalles.forEach((item, index) => {
-      const nombre = item.platillo?.nombre || item.nombre_platillo || `Producto #${item.platillo_id}`;
-      const cantidad = parseInt(item.cantidad) || 1;
-      const precio = parseFloat(item.precio_unitario || item.platillo?.precio || 0);
-      const subtotal = cantidad * precio;
+    items.forEach((i) => {
+      const nombreProd = 
+        (i.platillo && i.platillo.nombre) || 
+        (i.producto && i.producto.nombre) || 
+        i.nombre_platillo || 
+        i.nombre || 
+        `Platillo #${i.platillo_id || i.producto_id || i.id}`;
 
-      total += subtotal;
+      const cant = parseInt(i.cantidad || 1);
+      const precio = parseFloat(i.precio_unitario || (i.platillo ? i.platillo.precio : 0) || i.precio || 0);
+      const subtotal = i.subtotal ? parseFloat(i.subtotal) : (cant * precio);
 
-      tbody.innerHTML += `
+      sumaItems += subtotal;
+
+      tbodyItems.innerHTML += `
         <tr class="border-b">
-          <td class="p-2 font-medium text-gray-800">${nombre}</td>
-          <td class="p-2 text-center text-gray-700">${cantidad}</td>
+          <td class="p-2 font-medium text-gray-800">${nombreProd}</td>
+          <td class="p-2 text-center text-gray-700">${cant}</td>
           <td class="p-2 text-right text-gray-600">Q${precio.toFixed(2)}</td>
           <td class="p-2 text-right font-semibold text-gray-800">Q${subtotal.toFixed(2)}</td>
-          <td class="p-2 text-center">
-            <button onclick="eliminarProductoDeOrden(${index})" class="text-red-500 hover:text-red-700 font-bold px-2 py-1">✕</button>
-          </td>
         </tr>
       `;
     });
   }
 
-  // Actualizar Total y Cambio
-  ordenSeleccionada.total = total;
-  document.getElementById('modal-monto-total').innerText = `Q${total.toFixed(2)}`;
-  calcularCambio();
+  // Si hay suma de ítems la usamos, de lo contrario mostramos el total base de la orden (100)
+  const totalMostrar = sumaItems > 0 ? sumaItems : parseFloat(ordenSeleccionada.total || 0);
+  ordenSeleccionada.monto_calculado = totalMostrar;
+
+  const elemTotal = document.getElementById('modal-monto-total');
+  if (elemTotal) {
+    elemTotal.innerText = `Q${totalMostrar.toFixed(2)}`;
+  }
 }
 
-// 6. Calcular cambio en dinero
-function calcularCambio() {
-  const recibidoInput = document.getElementById('monto-recibido');
-  const cambioElem = document.getElementById('modal-cambio');
-  if (!recibidoInput || !cambioElem || !ordenSeleccionada) return;
+async function guardarLiquidacion() {
+  if (!ordenSeleccionada) return;
 
-  const recibido = parseFloat(recibidoInput.value) || 0;
-  const total = parseFloat(ordenSeleccionada.total) || 0;
+  const datosLiquidacion = {
+    metodo_pago: document.getElementById('select-metodo-pago').value,
+    estado_pago: document.getElementById('select-estado-pago').value,
+    monto_recibido: parseFloat(document.getElementById('monto-recibido').value) || 0,
+    // Enviamos los detalles actualizados en caso de que tu backend los requiera
+    detalles: ordenSeleccionada.detalles || []
+  };
 
-  const cambio = recibido > total ? recibido - total : 0;
-  cambioElem.innerText = `Q${cambio.toFixed(2)}`;
+  // NOTA: Ajusta el sufijo de la URL si tu endpoint se llama /liquidar, /estado o /pagar
+  const urlEndpoint = `${API_URL}/ordenes/${ordenSeleccionada.id}/liquidar`;
+
+  try {
+    const res = await fetch(urlEndpoint, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datosLiquidacion)
+    });
+
+    if (res.ok) {
+      cerrarModalDetalle();
+      cargarOrdenes();
+    } else {
+      const err = await res.json();
+      console.error("Error respuesta servidor:", err);
+      alert(`Error al procesar (${res.status}): ` + (err.detail || "Verifica el endpoint backend"));
+    }
+  } catch (err) {
+    console.error("Error de red:", err);
+    alert("Error de conexión con el backend.");
+  }
 }
 
-// 7. Cerrar Modal
-function cerrarModalDetalle() {
-  document.getElementById('modal-detalle').classList.add('hidden');
-  ordenSeleccionada = null;
-}
+    function cerrarModalDetalle() {
+      document.getElementById('modal-detalle').classList.add('hidden');
+      ordenSeleccionada = null;
+    }
+
+    function calcularCambio() {
+      if (!ordenSeleccionada) return;
+      const total = ordenSeleccionada.total || 0;
+      const recibido = parseFloat(document.getElementById('monto-recibido').value) || 0;
+      const cambio = recibido - total;
+      document.getElementById('modal-cambio').innerText = `Q${cambio > 0 ? cambio.toFixed(2) : '0.00'}`;
+    }
+
+    async function guardarLiquidacion() {
+      if (!ordenSeleccionada) return;
+
+      const datosLiquidacion = {
+        metodo_pago: document.getElementById('select-metodo-pago').value,
+        estado_pago: document.getElementById('select-estado-pago').value,
+        monto_recibido: parseFloat(document.getElementById('monto-recibido').value) || 0,
+        detalles: (ordenSeleccionada.detalles || []).map(i => ({
+          platillo_id: i.platillo_id || i.producto_id,
+          cantidad: i.cantidad,
+          precio_unitario: i.precio_unitario
+        }))
+      };
+
+      try {
+        const res = await fetch(`${API_URL}/ordenes/${ordenSeleccionada.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(datosLiquidacion)
+        });
+
+        if (!res.ok) {
+          // Si el endpoint /ordenes/{id} no soporta PUT completo, intentamos con /liquidar
+          await fetch(`${API_URL}/ordenes/${ordenSeleccionada.id}/liquidar`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datosLiquidacion)
+          });
+        }
+
+        cerrarModalDetalle();
+        cargarOrdenes();
+      } catch (err) {
+        alert("Error al guardar la liquidación");
+      }
+    }
+
     async function eliminarOrdenActual() {
       if (!ordenSeleccionada) return;
       if (!confirm(`¿Estás seguro de eliminar la Orden #${ordenSeleccionada.id}?`)) return;
