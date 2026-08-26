@@ -524,7 +524,7 @@
       }
     }
 
-    async function abrirModalDetalle(idOrden) {
+async function abrirModalDetalle(idOrden) {
   const idBusqueda = parseInt(idOrden);
 
   // 1. Obtener la orden base del array local
@@ -538,20 +538,19 @@
     return;
   }
 
-  // 2. Intentar consultar los detalles completos de la orden al backend
+  // 2. Consultar la orden completa al backend (URL corregida: /ordenes/{id})
   try {
-    // Probamos la ruta de detalles de la orden
-    const res = await fetch(`${API_URL}/ordenes/${idBusqueda}/detalles`);
+    const res = await fetch(`${API_URL}/ordenes/${idBusqueda}`);
     if (res.ok) {
-      const dataDetalles = await res.json();
-      // Si la API devuelve un array de detalles o un objeto orden completo
-      ordenSeleccionada.detalles = Array.isArray(dataDetalles) ? dataDetalles : (dataDetalles.detalles || []);
+      const ordenCompleta = await res.json();
+      // Asignamos la información con sus detalles y datos de cliente actualizados
+      ordenSeleccionada = ordenCompleta;
     }
   } catch (e) {
-    console.warn("No se pudieron cargar los detalles remotos, se usarán los locales.", e);
+    console.warn("No se pudo obtener la orden desde la API, se usará el estado local.", e);
   }
 
-  // Asegurar que exista la lista de detalles
+  // Asegurar que exista el array de detalles
   if (!ordenSeleccionada.detalles) {
     ordenSeleccionada.detalles = [];
   }
@@ -562,13 +561,17 @@
 
   const elemCliente = document.getElementById('modal-cliente-nombre');
   if (elemCliente) {
-    elemCliente.innerText = ordenSeleccionada.cliente || `Cliente #${ordenSeleccionada.cliente_id || ''}`;
+    const nombreCliente = ordenSeleccionada.cliente 
+      ? ordenSeleccionada.cliente.nombre 
+      : (ordenSeleccionada.cliente_id ? `Cliente #${ordenSeleccionada.cliente_id}` : 'Consumidor Final');
+    
+    elemCliente.innerText = nombreCliente;
   }
 
-  // 4. Renderizar la tabla e ítems
+  // 4. Renderizar los platillos del modal
   renderizarItemsModalDetalle();
 
-  // 5. Abrir el modal
+  // 5. Mostrar el modal
   const modal = document.getElementById('modal-detalle');
   if (modal) modal.classList.remove('hidden');
 }
