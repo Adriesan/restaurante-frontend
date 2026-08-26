@@ -210,6 +210,7 @@
                 <th class="p-2 text-center">Cant.</th>
                 <th class="p-2 text-right">Precio</th>
                 <th class="p-2 text-right">Subtotal</th>
+                <th class="p-2 text-center">Acción</th>
               </tr>
             </thead>
             <tbody id="modal-tabla-items" class="divide-y">
@@ -789,7 +790,150 @@ async function guardarLiquidacion() {
     alert(`Error: ${error.message}`);
   }
 }
+// 1. Función para agregar un producto a la orden seleccionada
+function agregarProductoAOrdenExistente() {
+  if (!ordenSeleccionada) {
+    alert("No hay ninguna orden seleccionada.");
+    return;
+  }
 
+  // Validar restricción de estado
+  const estadoActual = (ordenSeleccionada.estado || '').toLowerCase();
+  if (estadoActual === 'pagado' || estadoActual === 'cancelado' || estadoActual === 'pagada' || estadoActual === 'cancelada') {
+    alert(`No se pueden agregar productos a una orden ${ordenSeleccionada.estado.toUpperCase()}.`);
+    return;
+  }
+
+  const selectPlatillo = document.getElementById('modal-select-platillo');
+  const inputCantidad = document.getElementById('modal-input-cantidad');
+
+  if (!selectPlatillo || !selectPlatillo.value) {
+    alert("Por favor selecciona un platillo.");
+    return;
+  }
+
+  const platilloId = parseInt(selectPlatillo.value);
+  const cantidad = parseInt(inputCantidad?.value || 1);
+
+  if (isNaN(cantidad) || cantidad <= 0) {
+    alert("Ingresa una cantidad válida mayor a cero.");
+    return;
+  }
+
+  // Obtener el objeto platillo desde la lista global de platillos precargada
+  const arrayPlatillos = (typeof listaPlatillos !== 'undefined') ? listaPlatillos : 
+                         (typeof platillos !== 'undefined') ? platillos : [];
+  
+  const platilloInfo = arrayPlatillos.find(p => parseInt(p.id) === platilloId);
+
+  const nombrePlatillo = platilloInfo ? platilloInfo.nombre : `Platillo #${platilloId}`;
+  const precioUnitario = platilloInfo ? parseFloat(platilloInfo.precio) : 0;
+
+  // Verificar si el platillo ya está en la lista para incrementar cantidad
+  const itemExistente = ordenSeleccionada.detalles.find(d => parseInt(d.platillo_id || d.platillo?.id) === platilloId);
+
+  if (itemExistente) {
+    itemExistente.cantidad = parseInt(itemExistente.cantidad) + cantidad;
+  } else {
+    // Agregar nuevo ítem al array de detalles de la orden local
+    ordenSeleccionada.detalles.push({
+      platillo_id: platilloId,
+      cantidad: cantidad,
+      precio_unitario: precioUnitario,
+      platillo: platilloInfo || { nombre: nombrePlatillo, precio: precioUnitario }
+    });
+  }
+
+  // Limpiar/reiniciar controles
+  if (inputCantidad) inputCantidad.value = 1;
+  if (selectPlatillo) selectPlatillo.value = '';
+
+  // Actualizar la tabla visual del modal y recalcular el total
+  renderizarItemsModalDetalle();
+}
+
+// 2. Función para eliminar un producto de la orden
+function eliminarProductoDeOrden(index) {
+  if (!ordenSeleccionada) return;
+
+  // Validar restricción de estado
+  const estadoActual = (ordenSeleccionada.estado || '').toLowerCase();
+  if (estadoActual === 'pagado' || estadoActual === 'cancelado' || estadoActual === 'pagada' || estadoActual === 'cancelada') {
+    alert(`No se pueden eliminar productos de una orden ${ordenSeleccionada.estado.toUpperCase()}.`);
+    return;
+  }
+
+  // Eliminar la fila según su índice en el arreglo
+  ordenSeleccionada.detalles.splice(index, 1);
+
+  // Renderizar la tabla actualizada
+  renderizarItemsModalDetalle();
+}
+
+// 3. Renderizar la tabla con soporte para botón de eliminar y bloqueo por estado
+function renderizarItemsModalDetalle() {
+  if (!ordenSeleccionada) return;
+
+  const tbodyItems = document.getElementById('modal-tabla-items');
+  if (!tbodyItems) return;
+  tbodyItems.innerHTML = '';
+
+  const items = ordenSeleccionada.detalles || [];
+  let sumaItems = 0;
+
+  // Verificar si la orden permite modificaciones
+  const estadoActual = (ordenSeleccionada.estado || '').toLowerCase();
+  const esEditable = !(estadoActual === 'pagado' || estadoActual === 'cancelado' || estadoActual === 'pagada' || estadoActual === 'cancelada');
+
+  // Controlar la visibilidad de la sección de agregar productos en el HTML
+  const contenedorAgregar = document.getElementById('modal-sec-agregar-producto');
+  if (contenedorAgregar) {
+    if (esEditable) {
+      contenedorAgregar.classList.remove('hidden');
+    } else {
+      contenedorAgregar.classList.add('hidden');
+    }
+  }
+
+  if (items.length === 0) {
+    tbodyItems.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-gray-400">Sin detalles cargados en esta orden</td></tr>`;
+  } else {
+    items.forEach((i, idx) => {
+      const nombreProd = 
+        (i.platillo && i.platillo.nombre) || 
+        i.nombre_platillo || 
+        i.nombre || 
+        `Platillo #${i.platillo_id || i.id}`;
+
+      const cant = parseInt(i.cantidad || 1);
+      const precio = parseFloat(i.precio_unitario || (i.platillo ? i.platillo.precio : 0) || 0);
+      const subtotal = cant * precio;
+
+      sumaItems += subtotal;
+
+      const botonEliminar = esEditable 
+        ? `<button onclick="eliminarProductoDeOrden(${idx})" class="text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded">✕</button>`
+        : `<span class="text-gray-300">-</span>`;
+
+      tbodyItems.innerHTML += `
+        <tr class="border-b">
+          <td class="p-2 font-medium text-gray-800">${nombreProd}</td>
+          <td class="p-2 text-center text-gray-700">${cant}</td>
+          <td class="p-2 text-right text-gray-600">Q${precio.toFixed(2)}</td>
+          <td class="p-2 text-right font-semibold text-gray-800">Q${subtotal.toFixed(2)}</td>
+          <td class="p-2 text-center">${botonEliminar}</td>
+        </tr>
+      `;
+    });
+  }
+
+  // Actualizar el total general en el modal
+  ordenSeleccionada.total = sumaItems;
+  const elemTotal = document.getElementById('modal-monto-total');
+  if (elemTotal) {
+    elemTotal.innerText = `Q${sumaItems.toFixed(2)}`;
+  }
+}
     cargarInicial();
   </script>
 </body>
