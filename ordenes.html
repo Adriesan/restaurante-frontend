@@ -530,48 +530,49 @@
 // ==========================================
 function abrirModalDetalle(idOrden) {
   try {
-    // Buscar la orden en el arreglo que ya existe en memoria en tu frontend
-    const arrayOrdenes = (typeof listaOrdenes !== 'undefined') ? listaOrdenes : 
-                         (typeof ordenes !== 'undefined') ? ordenes : [];
+    // 1. Buscar la orden en las variables globales que ya tienes en memoria
+    const arrayOrdenes = (typeof listaOrdenes !== 'undefined' && listaOrdenes.length > 0) ? listaOrdenes : 
+                         (typeof ordenes !== 'undefined' && ordenes.length > 0) ? ordenes : [];
 
+    // Buscar coincidencia por ID (convertido a entero o string)
     ordenSeleccionada = arrayOrdenes.find(o => parseInt(o.id) === parseInt(idOrden));
 
     if (!ordenSeleccionada) {
-      console.error(`No se encontró la orden con ID: ${idOrden}`);
-      alert("No se encontraron los datos de la orden seleccionada.");
+      console.error(`No se encontró la orden con ID: ${idOrden} en la lista local.`);
+      alert("No se pudo encontrar la información de la orden seleccionada.");
       return;
     }
 
-    // 1. Rellenar cabecera y datos del cliente
+    // 2. Rellenar títulos y datos del cliente
     document.getElementById('modal-titulo-orden').innerText = `Detalle de Orden #${ordenSeleccionada.id}`;
     document.getElementById('modal-fecha-orden').innerText = ordenSeleccionada.fecha || ordenSeleccionada.creado_en || '--/--/----';
-    
-    // Extracción segura de datos de cliente
+
     const clienteNombre = ordenSeleccionada.cliente_nombre || (ordenSeleccionada.cliente ? ordenSeleccionada.cliente.nombre : '-');
-    const clienteTel = ordenSeleccionada.cliente_telefono || (ordenSeleccionada.cliente ? ordenSeleccionada.cliente.telefono : '-');
-    const clienteDir = ordenSeleccionada.direccion_entrega || ordenSeleccionada.direccion || (ordenSeleccionada.cliente ? ordenSeleccionada.cliente.direccion : '-');
+    const clienteTelefono = ordenSeleccionada.cliente_telefono || (ordenSeleccionada.cliente ? ordenSeleccionada.cliente.telefono : '-');
+    const clienteDireccion = ordenSeleccionada.direccion_entrega || ordenSeleccionada.direccion || (ordenSeleccionada.cliente ? ordenSeleccionada.cliente.direccion : '-');
+    const tipoPedido = ordenSeleccionada.tipo_pedido || ordenSeleccionada.tipo || '-';
 
     document.getElementById('modal-cliente-nombre').innerText = clienteNombre;
-    document.getElementById('modal-cliente-telefono').innerText = clienteTel;
-    document.getElementById('modal-tipo-pedido').innerText = (ordenSeleccionada.tipo_pedido || ordenSeleccionada.tipo || '-').toUpperCase();
-    document.getElementById('modal-cliente-direccion').innerText = clienteDir;
+    document.getElementById('modal-cliente-telefono').innerText = clienteTelefono;
+    document.getElementById('modal-tipo-pedido').innerText = String(tipoPedido).toUpperCase();
+    document.getElementById('modal-cliente-direccion').innerText = clienteDireccion;
 
-    // 2. Establecer valores de liquidación
+    // 3. Rellenar campos de liquidación
     document.getElementById('select-metodo-pago').value = ordenSeleccionada.metodo_pago || 'EFECTIVO';
     document.getElementById('select-estado-pago').value = ordenSeleccionada.estado_pago || ordenSeleccionada.estado || 'PENDIENTE';
     document.getElementById('monto-recibido').value = ordenSeleccionada.monto_recibido || '';
 
-    // 3. Cargar el select de productos adicionales y renderizar ítems
+    // 4. Cargar combo de productos y refrescar la tabla
     cargarSelectProductosExtra();
     renderizarItemsModalDetalle();
 
-    // 4. Mostrar el modal
+    // 5. Mostrar modal
     const modal = document.getElementById('modal-detalle');
     if (modal) modal.classList.remove('hidden');
 
   } catch (error) {
-    console.error("Error al abrir el modal:", error);
-    alert("Ocurrió un error al cargar la información del modal.");
+    console.error("Error al procesar el modal:", error);
+    alert("Ocurrió un detalle al abrir la información de la orden.");
   }
 }
 
