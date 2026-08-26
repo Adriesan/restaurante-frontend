@@ -527,27 +527,26 @@
 async function abrirModalDetalle(idOrden) {
   const idBusqueda = parseInt(idOrden);
 
-  // 1. Obtener la orden base del array local
+  // 1. Intentar obtener la orden base del array local
   const arrayOrdenes = (typeof listaOrdenes !== 'undefined') ? listaOrdenes : 
                        (typeof ordenes !== 'undefined') ? ordenes : [];
   
   ordenSeleccionada = arrayOrdenes.find(o => parseInt(o.id) === idBusqueda);
 
-  if (!ordenSeleccionada) {
-    alert("No se encontró la orden.");
-    return;
-  }
-
-  // 2. Consultar la orden completa al backend (URL corregida: /ordenes/{id})
+  // 2. Obtener la orden actualizada con sus datos de cliente y detalles desde el backend
   try {
     const res = await fetch(`${API_URL}/ordenes/${idBusqueda}`);
     if (res.ok) {
       const ordenCompleta = await res.json();
-      // Asignamos la información con sus detalles y datos de cliente actualizados
       ordenSeleccionada = ordenCompleta;
     }
   } catch (e) {
-    console.warn("No se pudo obtener la orden desde la API, se usará el estado local.", e);
+    console.warn("No se pudo refrescar la orden desde la API, usando versión local.", e);
+  }
+
+  if (!ordenSeleccionada) {
+    alert("No se encontró la información de la orden.");
+    return;
   }
 
   // Asegurar que exista el array de detalles
@@ -555,27 +554,61 @@ async function abrirModalDetalle(idOrden) {
     ordenSeleccionada.detalles = [];
   }
 
-  // 3. Mostrar datos del cliente y modal
+  // 3. Llenar el ID de la orden en el título del modal
   const elemId = document.getElementById('modal-id-orden');
   if (elemId) elemId.innerText = ordenSeleccionada.id;
 
-  const elemCliente = document.getElementById('modal-cliente-nombre');
-  if (elemCliente) {
-    const nombreCliente = ordenSeleccionada.cliente 
-      ? ordenSeleccionada.cliente.nombre 
-      : (ordenSeleccionada.cliente_id ? `Cliente #${ordenSeleccionada.cliente_id}` : 'Consumidor Final');
-    
-    elemCliente.innerText = nombreCliente;
+  // 4. Llenar los datos del Cliente
+  const cliente = ordenSeleccionada.cliente;
+
+  const elemNombre = document.getElementById('modal-cliente-nombre');
+  if (elemNombre) {
+    elemNombre.innerText = cliente ? cliente.nombre : 'Consumidor Final / General';
   }
 
-  // 4. Renderizar los platillos del modal
+  const elemTelefono = document.getElementById('modal-cliente-telefono');
+  if (elemTelefono) {
+    const tels = [cliente?.telefono, cliente?.telefono_2].filter(Boolean).join(' / ');
+    elemTelefono.innerText = tels || 'N/A';
+  }
+
+  const elemDireccion = document.getElementById('modal-cliente-direccion');
+  if (elemDireccion) {
+    elemDireccion.innerText = cliente?.direccion || 'No especificada';
+  }
+
+  const elemReferencia = document.getElementById('modal-cliente-referencia');
+  if (elemReferencia) {
+    elemReferencia.innerText = cliente?.referencia || 'N/A';
+  }
+
+  const elemNit = document.getElementById('modal-cliente-nit');
+  if (elemNit) {
+    elemNit.innerText = cliente?.nit || 'C/F';
+  }
+
+  // 5. Llenar tipo de pedido y observaciones
+  const elemTipoPedido = document.getElementById('modal-tipo-pedido');
+  if (elemTipoPedido) {
+    elemTipoPedido.innerText = ordenSeleccionada.tipo_pedido || 'N/A';
+  }
+
+  const elemObservaciones = document.getElementById('modal-observaciones');
+  if (elemObservaciones) {
+    elemObservaciones.innerText = ordenSeleccionada.observaciones || 'Sin observaciones';
+  }
+
+  // 6. Renderizar los platillos/ítems en la tabla del modal
   renderizarItemsModalDetalle();
 
-  // 5. Mostrar el modal
+  // 7. Mostrar el modal quitando la clase 'hidden'
   const modal = document.getElementById('modal-detalle');
-  if (modal) modal.classList.remove('hidden');
+  if (modal) {
+    modal.classList.remove('hidden');
+  } else {
+    console.error("El elemento con id 'modal-detalle' no se encontró en el DOM.");
+  }
 }
-
 function renderizarItemsModalDetalle() {
   if (!ordenSeleccionada) return;
 
